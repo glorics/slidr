@@ -5,3 +5,4 @@ outputs/
 test_results/
 test_slide_*.png
 *.log
+.env.production.backup
