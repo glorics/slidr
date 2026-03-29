@@ -1,0 +1,19 @@
+{
+  "name": "autocarousel",
+  "version": "0.1.0",
+  "description": "AutoCarousel - URL to Annotated Tutorial Images",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21",
+    "puppeteer": "^23",
+    "sharp": "^0.33",
+    "cheerio": "^1.0",
+    "axios": "^1.7",
+    "archiver": "^7.0",
+    "dotenv": "^16.4"
+  }
+}

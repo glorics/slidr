@@ -1,0 +1,5 @@
+/* 4:5 format — 1080x1350 — LinkedIn / Instagram (default) */
+:root {
+  --slide-w: 1080px;
+  --slide-h: 1350px;
+}

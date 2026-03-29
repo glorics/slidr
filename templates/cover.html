@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Cover Template - AutoCarousel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   AUTOCAROUSEL - COVER TEMPLATE (TYPE C)
+   No reference image - designed to match style
+   Format: 4:5 (1080x1350)
+   ============================================ */
+
+:root {
+  --bg: #0D0D0D;
+  --text: #FFFFFF;
+  --text-muted: #CCCCCC;
+  --accent: #D97757;
+  --slide-w: 1080px;
+  --slide-h: 1350px;
+}
+
+/* === Preview wrapper === */
+html { background: #333; }
+body {
+  margin: 0;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  background: #333;
+}
+
+/* === Slide === */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.slide {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle background gradient */
+.slide::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(217, 119, 87, 0.10) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.slide::after {
+  content: '';
+  position: absolute;
+  bottom: -200px;
+  left: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(217, 119, 87, 0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* === Source logo === */
+.cover-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.08);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
+}
+.cover-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* === Source domain === */
+.cover-domain {
+  font-size: 16px;
+  font-weight: 500;
+  color: #888;
+  margin-top: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Step count badge === */
+.cover-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(217, 119, 87, 0.15);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 100px;
+  margin-bottom: 48px;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Accent line === */
+.cover-accent {
+  width: 56px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+  margin-bottom: 40px;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Title === */
+.cover-title {
+  font-size: 64px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+  max-width: 800px;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Subtitle === */
+.cover-subtitle {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 600px;
+  position: relative;
+  z-index: 1;
+}
+
+/* === Bottom branding === */
+.cover-footer {
+  position: absolute;
+  bottom: 56px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 1;
+}
+
+.cover-footer .brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cover-footer .url {
+  font-size: 13px;
+  color: #555;
+}
+</style>
+</head>
+<body>
+
+<div class="slide">
+  {{logo_html}}
+  <div class="cover-badge">{{slide_count}} steps</div>
+  <div class="cover-accent"></div>
+  <h1 class="cover-title">{{title}}</h1>
+  <p class="cover-subtitle">{{subtitle}}</p>
+  <p class="cover-domain">{{source_domain}}</p>
+
+  <div class="cover-footer">
+    <span class="brand">AutoCarousel</span>
+    <span class="url">autocarousel.glorics.com</span>
+  </div>
+</div>
+
+</body>
+</html>

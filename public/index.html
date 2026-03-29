@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoCarousel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0A0A;
+  --surface: #141414;
+  --surface-2: #1E1E1E;
+  --border: #2A2A2A;
+  --text: #FFFFFF;
+  --text-muted: #888888;
+  --accent: #D97757;
+  --accent-hover: #E08A6A;
+  --accent-dim: rgba(217, 119, 87, 0.12);
+  --radius: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* === HEADER === */
+.header {
+  padding: 24px 40px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.logo span { color: var(--accent); }
+
+.header-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  margin-left: 24px;
+}
+.header-links a:hover { color: var(--text); }
+
+/* === MAIN === */
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 60px 24px;
+}
+
+.hero-title {
+  font-size: 40px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+
+.hero-sub {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-bottom: 48px;
+  line-height: 1.5;
+}
+
+/* === FORM === */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.url-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.url-input:focus {
+  border-color: var(--accent);
+}
+
+.url-input::placeholder {
+  color: #555;
+}
+
+/* Format selector */
+.format-options {
+  display: flex;
+  gap: 10px;
+}
+
+.format-option {
+  flex: 1;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.format-option:hover {
+  border-color: #444;
+  color: var(--text);
+}
+
+.format-option.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.format-option .ratio { font-weight: 700; display: block; margin-bottom: 2px; }
+.format-option .dims { font-size: 11px; color: var(--text-muted); }
+
+/* Generate button */
+.btn-generate {
+  width: 100%;
+  padding: 18px;
+  background: var(--accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 8px;
+}
+
+.btn-generate:hover { background: var(--accent-hover); }
+.btn-generate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === PROGRESS === */
+.progress-section {
+  display: none;
+  margin-top: 40px;
+}
+
+.progress-section.visible { display: block; }
+
+.progress-bar-wrap {
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 2px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.5s ease;
+}
+
+.progress-log {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  color: var(--text-muted);
+  line-height: 1.8;
+}
+
+.progress-log .log-line {
+  display: flex;
+  gap: 10px;
+}
+
+.progress-log .log-step {
+  color: var(--accent);
+  font-weight: 600;
+  min-width: 80px;
+}
+
+/* === RESULTS === */
+.results-section {
+  display: none;
+  margin-top: 48px;
+}
+
+.results-section.visible { display: block; }
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.results-header h2 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.btn-download {
+  padding: 10px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.btn-download:hover { border-color: var(--accent); color: var(--accent); }
+
+.slides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.slide-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.slide-card:hover { border-color: #444; }
+
+.slide-card img {
+  width: 100%;
+  display: block;
+}
+
+.slide-card .slide-label {
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+/* === ERROR === */
+.error-msg {
+  display: none;
+  margin-top: 20px;
+  padding: 16px 20px;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  border-radius: var(--radius);
+  color: #FF6B7A;
+  font-size: 14px;
+}
+
+.error-msg.visible { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Auto<span>Carousel</span></div>
+  <div class="header-links">
+    <a href="/health">API Status</a>
+    <a href="/logout">Logout</a>
+  </div>
+</div>
+
+<div class="main">
+  <h1 class="hero-title">URL &rarr; Carousel</h1>
+  <p class="hero-sub">Paste any URL. Get annotated tutorial slides ready for LinkedIn, Instagram &amp; more.</p>
+
+  <!-- Form -->
+  <div class="form-group">
+    <label>URL</label>
+    <input type="url" class="url-input" id="urlInput" placeholder="https://docs.anthropic.com/en/docs/..." autofocus>
+  </div>
+
+  <div class="form-group">
+    <label>Language</label>
+    <div class="format-options">
+      <button class="format-option active" data-lang="en" onclick="selectLang(this)">
+        <span class="ratio">EN</span>
+        <span class="dims">English</span>
+      </button>
+      <button class="format-option" data-lang="fr" onclick="selectLang(this)">
+        <span class="ratio">FR</span>
+        <span class="dims">French</span>
+      </button>
+      <button class="format-option" data-lang="es" onclick="selectLang(this)">
+        <span class="ratio">ES</span>
+        <span class="dims">Spanish</span>
+      </button>
+      <button class="format-option" data-lang="de" onclick="selectLang(this)">
+        <span class="ratio">DE</span>
+        <span class="dims">German</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Format</label>
+    <div class="format-options">
+      <button class="format-option" data-format="3:4" onclick="selectFormat(this)">
+        <span class="ratio">3:4</span>
+        <span class="dims">1080 &times; 1440</span>
+      </button>
+      <button class="format-option active" data-format="4:5" onclick="selectFormat(this)">
+        <span class="ratio">4:5</span>
+        <span class="dims">1080 &times; 1350</span>
+      </button>
+      <button class="format-option" data-format="9:16" onclick="selectFormat(this)">
+        <span class="ratio">9:16</span>
+        <span class="dims">1080 &times; 1920</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="btn-generate" id="btnGenerate" onclick="generate()">Generate Carousel</button>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <!-- Progress -->
+  <div class="progress-section" id="progressSection">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-log" id="progressLog"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <div class="results-header">
+      <h2 id="resultsTitle">Carousel</h2>
+      <a class="btn-download" id="btnDownload" href="#">Download ZIP</a>
+    </div>
+    <div class="slides-grid" id="slidesGrid"></div>
+  </div>
+</div>
+
+<script>
+let selectedFormat = '4:5';
+let selectedLang = 'en';
+
+function selectFormat(btn) {
+  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedFormat = btn.dataset.format;
+}
+
+function selectLang(btn) {
+  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedLang = btn.dataset.lang;
+}
+
+async function generate() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+
+  const btn = document.getElementById('btnGenerate');
+  const progress = document.getElementById('progressSection');
+  const results = document.getElementById('resultsSection');
+  const errorMsg = document.getElementById('errorMsg');
+  const log = document.getElementById('progressLog');
+  const bar = document.getElementById('progressBar');
+
+  // Reset
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  progress.classList.add('visible');
+  results.classList.remove('visible');
+  errorMsg.classList.remove('visible');
+  log.innerHTML = '';
+  bar.style.width = '0%';
+
+  const steps = { scraping: 15, analyzing: 40, searching: 60, capturing: 75, rendering: 90 };
+
+  try {
+    const response = await fetch('/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang }),
+    });
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      let eventType = '';
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+
+          if (eventType === 'status') {
+            addLog(data.step, data.message);
+            if (steps[data.step]) {
+              bar.style.width = steps[data.step] + '%';
+            }
+          } else if (eventType === 'complete') {
+            bar.style.width = '100%';
+            showResults(data);
+          } else if (eventType === 'error') {
+            throw new Error(data.message);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    errorMsg.textContent = err.message;
+    errorMsg.classList.add('visible');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Carousel';
+  }
+}
+
+function addLog(step, message) {
+  const log = document.getElementById('progressLog');
+  log.innerHTML += `<div class="log-line"><span class="log-step">${step}</span><span>${message}</span></div>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function showResults(data) {
+  const results = document.getElementById('resultsSection');
+  const title = document.getElementById('resultsTitle');
+  const grid = document.getElementById('slidesGrid');
+  const downloadBtn = document.getElementById('btnDownload');
+
+  title.textContent = data.carousel_title || 'Carousel';
+  downloadBtn.href = data.zip_url || '#';
+  grid.innerHTML = '';
+
+  for (const slide of data.slides) {
+    const card = document.createElement('div');
+    card.className = 'slide-card';
+    card.innerHTML = `
+      <a href="${slide.url}" target="_blank">
+        <img src="${slide.url}" alt="Slide ${slide.number}" loading="lazy">
+      </a>
+      <div class="slide-label">Slide ${slide.number}</div>
+    `;
+    grid.appendChild(card);
+  }
+
+  results.classList.add('visible');
+}
+
+// Enter to submit
+document.getElementById('urlInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') generate();
+});
+</script>
+
+</body>
+</html>

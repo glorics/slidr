@@ -1,0 +1,5 @@
+/* 9:16 format — 1080x1920 — Stories / Reels / TikTok */
+:root {
+  --slide-w: 1080px;
+  --slide-h: 1920px;
+}

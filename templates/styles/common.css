@@ -1,0 +1,64 @@
+/* ============================================
+   AUTOCAROUSEL — Common Styles
+   Shared palette, typography, annotations
+   ============================================ */
+
+:root {
+  --bg: #0D0D0D;
+  --text: #FFFFFF;
+  --text-muted: #CCCCCC;
+  --accent: #D97757;
+  --card-bg: #1A1A1A;
+  --separator: #D97757;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Annotation system */
+.anno-circle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 800;
+  color: #FFFFFF;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  transform: translate(-50%, -50%);
+}
+
+.anno-highlight {
+  position: absolute;
+  border: 3px solid var(--accent);
+  border-radius: 10px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.anno-arrow {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.anno-arrow path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.anno-arrow polygon {
+  fill: var(--accent);
+}

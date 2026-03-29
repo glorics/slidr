@@ -1,0 +1,7 @@
+node_modules/
+.env
+outputs/
+.work/
+test_results/
+test_slide_*.png
+*.log

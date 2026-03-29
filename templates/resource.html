@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Resource Template - AutoCarousel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   AUTOCAROUSEL - RESOURCE TEMPLATE (TYPE B)
+   Reference: image-2.png "08 - Prompt to write thesis"
+   Format: 4:5 (1080x1350)
+   ============================================ */
+
+:root {
+  --bg: #0D0D0D;
+  --text: #FFFFFF;
+  --text-muted: #CCCCCC;
+  --accent: #D97757;
+  --card-bg: #1A1A1A;
+  --slide-w: 1080px;
+  --slide-h: 1350px;
+}
+
+/* === Preview wrapper === */
+html { background: #333; }
+body {
+  margin: 0;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  background: #333;
+}
+
+/* === Slide === */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.slide {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  padding: 48px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--accent);
+}
+
+/* === Badge === */
+.slide-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-size: 22px;
+  font-weight: 800;
+  padding: 8px 22px;
+  border-radius: 8px;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-bottom: 20px;
+}
+
+/* === Title === */
+.slide-title {
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+  margin-bottom: 28px;
+}
+
+/* === Description box === */
+.slide-description {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 28px;
+  flex-shrink: 0;
+}
+
+.slide-description p {
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+.slide-description strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* === Media area === */
+.media-area {
+  flex: 1;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* YouTube mock */
+.youtube-embed {
+  flex: 1;
+  background: #0F0F0F;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid #333;
+}
+
+.youtube-viewport {
+  flex: 1;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.youtube-viewport img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Play button overlay (for real thumbnails) */
+.youtube-play-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.15);
+}
+
+.youtube-play {
+  width: 68px;
+  height: 48px;
+  background: rgba(255, 0, 0, 0.85);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.youtube-play::after {
+  content: '';
+  display: block;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 10px 0 10px 18px;
+  border-color: transparent transparent transparent #FFFFFF;
+  margin-left: 3px;
+}
+
+.youtube-bar {
+  background: #0F0F0F;
+  padding: 16px 20px;
+  flex-shrink: 0;
+}
+
+.youtube-bar .yt-logo {
+  color: #FF0000;
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.youtube-bar .yt-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+
+.youtube-bar .yt-meta {
+  font-size: 13px;
+  color: #888;
+}
+</style>
+</head>
+<body>
+
+<div class="slide">
+  <div class="slide-badge">{{slide_number}}</div>
+  <h1 class="slide-title">{{title}}</h1>
+
+  <div class="slide-description">
+    <p>{{description_html}}</p>
+  </div>
+
+  <div class="media-area">
+    {{media_html}}
+  </div>
+</div>
+
+</body>
+</html>

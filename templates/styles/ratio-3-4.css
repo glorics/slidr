@@ -1,0 +1,5 @@
+/* 3:4 format — 1080x1440 — Instagram carousel */
+:root {
+  --slide-w: 1080px;
+  --slide-h: 1440px;
+}

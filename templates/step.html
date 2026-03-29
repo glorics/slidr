@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Step Template - AutoCarousel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================
+   AUTOCAROUSEL - STEP TEMPLATE (TYPE A)
+   Layout: Title → Screenshot → Numbered Legend
+   Format: 4:5 (1080x1350)
+   ============================================ */
+
+:root {
+  --bg: #0D0D0D;
+  --text: #FFFFFF;
+  --text-muted: #CCCCCC;
+  --accent: #D97757;
+  --separator: #D97757;
+  --slide-w: 1080px;
+  --slide-h: 1350px;
+}
+
+/* === Preview wrapper (stripped by Puppeteer) === */
+html { background: #333; }
+body {
+  margin: 0;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+  background: #333;
+}
+
+/* === Slide === */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.slide {
+  width: var(--slide-w);
+  height: var(--slide-h);
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  padding: 48px 52px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* === Header with title + logo === */
+.slide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.slide-title-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* === Title === */
+.slide-title {
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/* === Logo === */
+.step-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 20px;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.step-logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+/* === Separator === */
+.slide-separator {
+  width: 100%;
+  height: 3px;
+  background: var(--separator);
+  margin: 20px 0 24px;
+  flex-shrink: 0;
+}
+
+/* === Screenshot area — takes most of the space === */
+.screenshot-area {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.screenshot-wrapper {
+  position: relative;
+  width: 100%;
+  max-height: 100%;
+  aspect-ratio: var(--screenshot-ar, 1);
+  overflow: hidden;
+  border-radius: 12px;
+  background: #F5F5F5;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  container-type: inline-size;
+}
+
+.screenshot-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 12px;
+  background: #F5F5F5;
+}
+
+/* Placeholder for dev mode */
+.screenshot-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #F8F8F8 0%, #E8E8E8 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 16px;
+  gap: 8px;
+}
+
+/* ============================================
+   LEGEND — numbered explanations below screenshot
+   ============================================ */
+
+.slide-legend {
+  flex-shrink: 0;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.legend-number {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin-top: 1px;
+}
+
+.legend-text {
+  font-size: 21px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.legend-text strong {
+  font-weight: 700;
+}
+
+/* ============================================
+   ANNOTATIONS (on screenshot)
+   ============================================ */
+
+/* Numbered circle — 44px, accent bg, white border, strong shadow */
+.anno-circle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #FFFFFF;
+  border: 2.5px solid rgba(255,255,255,0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(217, 119, 87, 0.3);
+  z-index: 10;
+  font-family: 'Inter', sans-serif;
+  transform: translate(-50%, -50%);
+}
+
+/* Highlight box — rounded, accent border, NO fill, outer glow */
+.anno-highlight {
+  position: absolute;
+  border: 2.5px solid var(--accent);
+  border-radius: 12px;
+  z-index: 5;
+  pointer-events: none;
+  box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.2);
+  background: transparent;
+}
+
+/* Spotlight / dimming effect */
+.anno-spotlight {
+  position: absolute;
+  z-index: 4;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+</style>
+</head>
+<body>
+
+<div class="slide">
+  <div class="slide-header">
+    <div class="slide-title-area">
+      <h1 class="slide-title">{{slide_number}}. {{title}}</h1>
+    </div>
+    {{logo_html}}
+  </div>
+  <div class="slide-separator"></div>
+
+  <div class="screenshot-area">
+    <div class="screenshot-wrapper" style="--screenshot-ar: {{screenshot_aspect_ratio}};">
+      {{screenshot_content}}
+    </div>
+  </div>
+
+  <div class="slide-legend">
+    {{legend_html}}
+  </div>
+</div>
+
+</body>
+</html>
