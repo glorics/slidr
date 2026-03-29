@@ -162,6 +162,72 @@ body {
   border-color: rgba(255,255,255,0.6);
 }
 
+/* Custom color picker accordion */
+.custom-picker-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, margin-top 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  margin-top: 0;
+}
+.custom-picker-panel.open {
+  max-height: 120px;
+  opacity: 1;
+  margin-top: 12px;
+}
+.custom-picker-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+}
+.custom-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.custom-picker-row input[type="color"] {
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+.custom-picker-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.custom-picker-row input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 10px; }
+.custom-picker-row input[type="color"]::-moz-color-swatch { border: 2px solid var(--border); border-radius: 10px; }
+.custom-picker-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.custom-picker-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.custom-picker-hex {
+  width: 100px;
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  outline: none;
+}
+.custom-picker-hex:focus { border-color: var(--accent); }
+.custom-picker-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  transition: background 0.2s;
+}
+
 /* Generate button */
 .btn-generate {
   width: 100%;
@@ -416,11 +482,22 @@ body {
         <span class="color-swatch" style="background:#F1C40F"></span>
         <span class="dims">Gold</span>
       </button>
-      <button class="format-option color-option" id="customColorBtn" onclick="document.getElementById('colorPicker').click()" title="Custom">
+      <button class="format-option color-option" id="customColorBtn" onclick="toggleCustomPicker()" title="Custom">
         <span class="color-swatch" id="customSwatch" style="background:#888"></span>
         <span class="dims">Custom</span>
       </button>
-      <input type="color" id="colorPicker" value="#D97757" style="display:none" oninput="pickCustomColor(this.value)">
+    </div>
+    <div class="custom-picker-panel" id="customPickerPanel">
+      <div class="custom-picker-inner">
+        <div class="custom-picker-row">
+          <input type="color" id="colorPicker" value="#D97757" oninput="pickCustomColor(this.value)">
+          <div class="custom-picker-info">
+            <span class="custom-picker-label">Pick any color</span>
+            <input type="text" class="custom-picker-hex" id="hexInput" value="#D97757" maxlength="7" placeholder="#000000" oninput="pickCustomHex(this.value)">
+          </div>
+          <div class="custom-picker-preview" id="customPreview" style="background:#D97757"></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -475,6 +552,9 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('customColorBtn').classList.add('active');
     document.getElementById('customSwatch').style.background = selectedColor;
     document.getElementById('colorPicker').value = selectedColor;
+    document.getElementById('hexInput').value = selectedColor;
+    document.getElementById('customPreview').style.background = selectedColor;
+    document.getElementById('customPickerPanel').classList.add('open');
   }
   // Apply accent color to UI
   applyAccentColor(selectedColor);
@@ -507,16 +587,47 @@ function selectColor(btn) {
   selectedColor = btn.dataset.color;
   localStorage.setItem('ac_color', selectedColor);
   applyAccentColor(selectedColor);
+  // Close custom picker if open
+  document.getElementById('customPickerPanel').classList.remove('open');
+}
+
+function toggleCustomPicker() {
+  const panel = document.getElementById('customPickerPanel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    // Set picker to current custom color
+    document.getElementById('colorPicker').value = selectedColor;
+    document.getElementById('hexInput').value = selectedColor;
+    document.getElementById('customPreview').style.background = selectedColor;
+  }
+  // Activate custom button
+  document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
+  document.getElementById('customColorBtn').classList.add('active');
 }
 
 function pickCustomColor(color) {
-  // Deselect all presets, activate custom button
   document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
   document.getElementById('customColorBtn').classList.add('active');
   document.getElementById('customSwatch').style.background = color;
+  document.getElementById('hexInput').value = color;
+  document.getElementById('customPreview').style.background = color;
   selectedColor = color;
   localStorage.setItem('ac_color', selectedColor);
   applyAccentColor(selectedColor);
+}
+
+function pickCustomHex(value) {
+  if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+    document.getElementById('colorPicker').value = value;
+    document.getElementById('customSwatch').style.background = value;
+    document.getElementById('customPreview').style.background = value;
+    selectedColor = value;
+    localStorage.setItem('ac_color', selectedColor);
+    applyAccentColor(selectedColor);
+  }
 }
 
 function applyAccentColor(color) {
