@@ -229,7 +229,7 @@ app.get('/render/:template', async (req, res) => {
 
 // === MAIN ENDPOINT: Generate carousel ===
 app.post('/generate', async (req, res) => {
-  const { url, format = '4:5', max_slides = 7, language = 'en' } = req.body;
+  const { url, format = '4:5', max_slides = 7, language = 'en', accent_color } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -251,6 +251,7 @@ app.post('/generate', async (req, res) => {
       format,
       maxSlides: max_slides,
       language,
+      accentColor: accent_color || process.env.ACCENT_COLOR || '#D97757',
       onStatus: (status) => sendEvent('status', status),
     });
 

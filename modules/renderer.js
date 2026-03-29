@@ -76,6 +76,11 @@ async function renderTemplate(templateName, data = {}, format = '4:5') {
   html = html.replace(/--slide-w:\s*\d+px/, `--slide-w: ${dim.width}px`);
   html = html.replace(/--slide-h:\s*\d+px/, `--slide-h: ${dim.height}px`);
 
+  // Inject custom accent color if provided
+  if (data.accent_color) {
+    html = html.replace(/--accent:\s*#[0-9A-Fa-f]{6}/, `--accent: ${data.accent_color}`);
+  }
+
   // Replace template variables {{key}}
   // Use a function replacement to avoid special $ interpretation in String.replace()
   for (const [key, value] of Object.entries(data)) {

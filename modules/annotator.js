@@ -12,9 +12,18 @@
 const sharp = require('sharp');
 const fs = require('fs');
 
-// Style constants matching the carousel design system
-const ACCENT = '#D97757';
-const ACCENT_RGBA = 'rgba(217,119,87,0.3)';
+// Style constants — defaults matching the carousel design system
+const DEFAULT_ACCENT = '#D97757';
+
+/**
+ * Convert hex color to rgba string.
+ */
+function hexToRgba(hex, alpha = 0.3) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
 // Circle: 44px diameter (matching CSS .anno-circle)
 const CIRCLE_R = 22;
@@ -29,7 +38,8 @@ const HL_GLOW = 8; // padding for outer glow
 /**
  * Create SVG for a numbered circle annotation.
  */
-function createCircleSvg(label) {
+function createCircleSvg(label, accent = DEFAULT_ACCENT) {
+  const accentRgba = hexToRgba(accent, 0.3);
   return Buffer.from(`<svg width="${CIRCLE_CANVAS}" height="${CIRCLE_CANVAS}" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <filter id="ds" x="-30%" y="-20%" width="160%" height="160%">
@@ -37,9 +47,9 @@ function createCircleSvg(label) {
     </filter>
   </defs>
   <circle cx="${CIRCLE_CENTER}" cy="${CIRCLE_CENTER}" r="${CIRCLE_R + 2}"
-          fill="none" stroke="${ACCENT_RGBA}" stroke-width="2"/>
+          fill="none" stroke="${accentRgba}" stroke-width="2"/>
   <circle cx="${CIRCLE_CENTER}" cy="${CIRCLE_CENTER}" r="${CIRCLE_R}"
-          fill="${ACCENT}" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" filter="url(#ds)"/>
+          fill="${accent}" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" filter="url(#ds)"/>
   <text x="${CIRCLE_CENTER}" y="${CIRCLE_CENTER}" text-anchor="middle" dominant-baseline="central"
         font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="white">${label}</text>
 </svg>`);
@@ -48,14 +58,15 @@ function createCircleSvg(label) {
 /**
  * Create SVG for a highlight box annotation.
  */
-function createHighlightSvg(w, h) {
+function createHighlightSvg(w, h, accent = DEFAULT_ACCENT) {
+  const accentRgba = hexToRgba(accent, 0.3);
   const svgW = w + HL_GLOW * 2;
   const svgH = h + HL_GLOW * 2;
   return Buffer.from(`<svg width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">
   <rect x="${HL_GLOW - 4}" y="${HL_GLOW - 4}" width="${w + 8}" height="${h + 8}"
-        fill="none" stroke="${ACCENT_RGBA}" stroke-width="4" rx="${HL_RADIUS + 2}"/>
+        fill="none" stroke="${accentRgba}" stroke-width="4" rx="${HL_RADIUS + 2}"/>
   <rect x="${HL_GLOW}" y="${HL_GLOW}" width="${w}" height="${h}"
-        fill="none" stroke="${ACCENT}" stroke-width="${HL_BORDER}" rx="${HL_RADIUS}"/>
+        fill="none" stroke="${accent}" stroke-width="${HL_BORDER}" rx="${HL_RADIUS}"/>
 </svg>`);
 }
 
@@ -68,7 +79,7 @@ function createHighlightSvg(w, h) {
  * @param {string} outputPath - Where to save the annotated image
  * @returns {Promise<string>} Output file path
  */
-async function compositeAnnotations(screenshotPath, annotations, outputPath) {
+async function compositeAnnotations(screenshotPath, annotations, outputPath, accentColor = DEFAULT_ACCENT) {
   const valid = (annotations || []).filter(a => !a._notFound);
   if (valid.length === 0) {
     fs.copyFileSync(screenshotPath, outputPath);
@@ -87,7 +98,7 @@ async function compositeAnnotations(screenshotPath, annotations, outputPath) {
     const cx = Math.round((hl.x_percent / 100) * imgW);
     const cy = Math.round((hl.y_percent / 100) * imgH);
 
-    const svg = createHighlightSvg(w, h);
+    const svg = createHighlightSvg(w, h, accentColor);
     composites.push({
       input: svg,
       left: Math.max(0, Math.round(cx - w / 2 - HL_GLOW)),
@@ -99,7 +110,7 @@ async function compositeAnnotations(screenshotPath, annotations, outputPath) {
   for (const circle of valid.filter(a => a.type === 'circle_number')) {
     const cx = Math.round((circle.x_percent / 100) * imgW);
     const cy = Math.round((circle.y_percent / 100) * imgH);
-    const svg = createCircleSvg(circle.label);
+    const svg = createCircleSvg(circle.label, accentColor);
 
     composites.push({
       input: svg,

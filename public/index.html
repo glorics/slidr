@@ -148,6 +148,20 @@ body {
 .format-option .ratio { font-weight: 700; display: block; margin-bottom: 2px; }
 .format-option .dims { font-size: 11px; color: var(--text-muted); }
 
+.color-swatch {
+  display: block;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin: 0 auto 4px;
+  border: 2px solid rgba(255,255,255,0.15);
+  transition: transform 0.2s, border-color 0.2s;
+}
+.color-option.active .color-swatch {
+  transform: scale(1.2);
+  border-color: rgba(255,255,255,0.6);
+}
+
 /* Generate button */
 .btn-generate {
   width: 100%;
@@ -357,6 +371,54 @@ body {
     </div>
   </div>
 
+  <div class="form-group">
+    <label>Slides</label>
+    <div class="format-options">
+      <button class="format-option" data-slides="5" onclick="selectSlides(this)">
+        <span class="ratio">5</span>
+        <span class="dims">Short</span>
+      </button>
+      <button class="format-option active" data-slides="7" onclick="selectSlides(this)">
+        <span class="ratio">7</span>
+        <span class="dims">Standard</span>
+      </button>
+      <button class="format-option" data-slides="9" onclick="selectSlides(this)">
+        <span class="ratio">9</span>
+        <span class="dims">Detailed</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Accent Color</label>
+    <div class="format-options" id="colorOptions">
+      <button class="format-option color-option active" data-color="#D97757" onclick="selectColor(this)" title="Terra Cotta">
+        <span class="color-swatch" style="background:#D97757"></span>
+        <span class="dims">Terra Cotta</span>
+      </button>
+      <button class="format-option color-option" data-color="#E05C8A" onclick="selectColor(this)" title="Pink">
+        <span class="color-swatch" style="background:#E05C8A"></span>
+        <span class="dims">Pink</span>
+      </button>
+      <button class="format-option color-option" data-color="#7C5CFC" onclick="selectColor(this)" title="Purple">
+        <span class="color-swatch" style="background:#7C5CFC"></span>
+        <span class="dims">Purple</span>
+      </button>
+      <button class="format-option color-option" data-color="#3B9EFF" onclick="selectColor(this)" title="Blue">
+        <span class="color-swatch" style="background:#3B9EFF"></span>
+        <span class="dims">Blue</span>
+      </button>
+      <button class="format-option color-option" data-color="#2ECC71" onclick="selectColor(this)" title="Green">
+        <span class="color-swatch" style="background:#2ECC71"></span>
+        <span class="dims">Green</span>
+      </button>
+      <button class="format-option color-option" data-color="#F1C40F" onclick="selectColor(this)" title="Gold">
+        <span class="color-swatch" style="background:#F1C40F"></span>
+        <span class="dims">Gold</span>
+      </button>
+    </div>
+  </div>
+
   <button class="btn-generate" id="btnGenerate" onclick="generate()">Generate Carousel</button>
 
   <div class="error-msg" id="errorMsg"></div>
@@ -380,19 +442,67 @@ body {
 </div>
 
 <script>
-let selectedFormat = '4:5';
-let selectedLang = 'en';
+let selectedFormat = localStorage.getItem('ac_format') || '4:5';
+let selectedLang = localStorage.getItem('ac_lang') || 'en';
+let selectedSlides = parseInt(localStorage.getItem('ac_slides')) || 7;
+let selectedColor = localStorage.getItem('ac_color') || '#D97757';
+
+// Restore saved preferences on load
+document.addEventListener('DOMContentLoaded', () => {
+  // Restore format
+  document.querySelectorAll('[data-format]').forEach(b => {
+    b.classList.toggle('active', b.dataset.format === selectedFormat);
+  });
+  // Restore language
+  document.querySelectorAll('[data-lang]').forEach(b => {
+    b.classList.toggle('active', b.dataset.lang === selectedLang);
+  });
+  // Restore slides
+  document.querySelectorAll('[data-slides]').forEach(b => {
+    b.classList.toggle('active', b.dataset.slides === String(selectedSlides));
+  });
+  // Restore color
+  document.querySelectorAll('[data-color]').forEach(b => {
+    b.classList.toggle('active', b.dataset.color === selectedColor);
+  });
+  // Apply accent color to UI
+  applyAccentColor(selectedColor);
+});
 
 function selectFormat(btn) {
   btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedFormat = btn.dataset.format;
+  localStorage.setItem('ac_format', selectedFormat);
 }
 
 function selectLang(btn) {
   btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedLang = btn.dataset.lang;
+  localStorage.setItem('ac_lang', selectedLang);
+}
+
+function selectSlides(btn) {
+  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedSlides = parseInt(btn.dataset.slides);
+  localStorage.setItem('ac_slides', selectedSlides);
+}
+
+function selectColor(btn) {
+  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedColor = btn.dataset.color;
+  localStorage.setItem('ac_color', selectedColor);
+  applyAccentColor(selectedColor);
+}
+
+function applyAccentColor(color) {
+  document.documentElement.style.setProperty('--accent', color);
+  // Compute hover (lighter) and dim (transparent) variants
+  document.documentElement.style.setProperty('--accent-hover', color + 'CC');
+  document.documentElement.style.setProperty('--accent-dim', color + '1F');
 }
 
 async function generate() {
@@ -421,7 +531,7 @@ async function generate() {
     const response = await fetch('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang }),
+      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang, max_slides: selectedSlides, accent_color: selectedColor }),
     });
 
     const reader = response.body.getReader();

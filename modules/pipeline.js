@@ -20,6 +20,7 @@ async function generateCarousel(url, options = {}) {
     format = '4:5',
     maxSlides = 7,
     language = 'en',
+    accentColor = '#D97757',
     onStatus = () => {},
   } = options;
 
@@ -249,7 +250,7 @@ async function generateCarousel(url, options = {}) {
           slide._originalScreenshotPath = slide._screenshotPath; // Save clean version for potential retry
           const annotatedPath = slide._screenshotPath.replace('.png', '_annotated.png');
           try {
-            await compositeAnnotations(slide._screenshotPath, validAnnotations, annotatedPath);
+            await compositeAnnotations(slide._screenshotPath, validAnnotations, annotatedPath, accentColor);
             slide._screenshotPath = annotatedPath;
             console.log(`[COMPOSITE] Slide ${slide.slide_number}: ${validAnnotations.length} annotations baked into image`);
           } catch (err) {
@@ -332,7 +333,7 @@ async function generateCarousel(url, options = {}) {
           // Re-composite on the clean (unannotated) screenshot
           const retryAnnotations = (slide.annotations || []).filter(a => !a._notFound);
           const retryPath = slide._originalScreenshotPath.replace('.png', `_annotated_v${attempt + 2}.png`);
-          await compositeAnnotations(slide._originalScreenshotPath, retryAnnotations, retryPath);
+          await compositeAnnotations(slide._originalScreenshotPath, retryAnnotations, retryPath, accentColor);
           slide._screenshotPath = retryPath;
 
           console.log(`[VERIFY] Slide ${slide.slide_number}: re-annotated with ${retryAnnotations.length} annotations, re-verifying...`);
@@ -367,7 +368,7 @@ async function generateCarousel(url, options = {}) {
         const newAnnos = (slide.annotations || []).filter(a => !a._notFound);
         if (newAnnos.length > 0) {
           const annotatedPath = cleanPath.replace('.png', '_safety_annotated.png');
-          await compositeAnnotations(cleanPath, newAnnos, annotatedPath);
+          await compositeAnnotations(cleanPath, newAnnos, annotatedPath, accentColor);
           slide._screenshotPath = annotatedPath;
           console.log(`[SAFETY NET] Slide ${slide.slide_number}: recovered with ${newAnnos.length} Vision-only annotations`);
         }
@@ -424,6 +425,7 @@ async function generateCarousel(url, options = {}) {
       console.log(`[DEBUG] Slide ${slide.slide_number}: ${annoCount} annotations (composited into screenshot image)`);
     }
 
+    data.accent_color = accentColor;
     const png = await renderTemplate(templateName, data, format);
 
     const filename = `slide_${String(i + 1).padStart(2, '0')}.png`;
