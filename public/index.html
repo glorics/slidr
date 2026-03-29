@@ -228,6 +228,74 @@ body {
   transition: background 0.2s;
 }
 
+/* Theme previews */
+.theme-preview {
+  display: block;
+  width: 32px;
+  height: 24px;
+  border-radius: 6px;
+  margin: 0 auto 4px;
+  border: 2px solid rgba(255,255,255,0.15);
+  position: relative;
+  overflow: hidden;
+}
+.theme-option.active .theme-preview {
+  border-color: rgba(255,255,255,0.6);
+  transform: scale(1.1);
+  transition: transform 0.2s;
+}
+.dark-preview { background: #0D0D0D; }
+.dark-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #FFF; }
+.light-preview { background: #FFFFFF; }
+.light-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #1A1A1A; }
+.navy-preview { background: #1A1B2E; }
+.navy-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #E8E8F0; }
+.warm-preview { background: #F5F0EB; }
+.warm-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #2C2420; }
+.custom-theme-preview { background: linear-gradient(135deg, #333 50%, #ccc 50%); }
+.custom-theme-preview::after { content: '?'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #FFF; }
+
+/* Theme picker panel */
+.theme-pick-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.theme-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-pick-row input[type="color"] {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+.theme-pick-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.theme-pick-row input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 8px; }
+.theme-pick-row input[type="color"]::-moz-color-swatch { border: 2px solid var(--border); border-radius: 8px; }
+.theme-mini-preview {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0D0D0D;
+  flex-shrink: 0;
+}
+.theme-mini-preview .tmp-text {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
 /* Generate button */
 .btn-generate {
   width: 100%;
@@ -456,6 +524,55 @@ body {
   </div>
 
   <div class="form-group">
+    <label>Theme</label>
+    <div class="format-options">
+      <button class="format-option theme-option active" data-bg="#0D0D0D" data-text="#FFFFFF" onclick="selectTheme(this)">
+        <span class="theme-preview dark-preview"></span>
+        <span class="dims">Dark</span>
+      </button>
+      <button class="format-option theme-option" data-bg="#FFFFFF" data-text="#1A1A1A" onclick="selectTheme(this)">
+        <span class="theme-preview light-preview"></span>
+        <span class="dims">Light</span>
+      </button>
+      <button class="format-option theme-option" data-bg="#1A1B2E" data-text="#E8E8F0" onclick="selectTheme(this)">
+        <span class="theme-preview navy-preview"></span>
+        <span class="dims">Navy</span>
+      </button>
+      <button class="format-option theme-option" data-bg="#F5F0EB" data-text="#2C2420" onclick="selectTheme(this)">
+        <span class="theme-preview warm-preview"></span>
+        <span class="dims">Warm</span>
+      </button>
+      <button class="format-option theme-option" id="customThemeBtn" onclick="toggleThemePicker()">
+        <span class="theme-preview custom-theme-preview" id="customThemePreview"></span>
+        <span class="dims">Custom</span>
+      </button>
+    </div>
+    <div class="custom-picker-panel" id="themePickerPanel">
+      <div class="custom-picker-inner">
+        <div class="custom-picker-row">
+          <div class="theme-pick-group">
+            <span class="custom-picker-label">Background</span>
+            <div class="theme-pick-row">
+              <input type="color" id="bgPicker" value="#0D0D0D" oninput="pickThemeColors()">
+              <input type="text" class="custom-picker-hex" id="bgHexInput" value="#0D0D0D" maxlength="7" oninput="pickThemeHex()">
+            </div>
+          </div>
+          <div class="theme-pick-group">
+            <span class="custom-picker-label">Text</span>
+            <div class="theme-pick-row">
+              <input type="color" id="textPicker" value="#FFFFFF" oninput="pickThemeColors()">
+              <input type="text" class="custom-picker-hex" id="textHexInput" value="#FFFFFF" maxlength="7" oninput="pickThemeHex()">
+            </div>
+          </div>
+          <div class="theme-mini-preview" id="themeMiniPreview">
+            <span class="tmp-text">Aa</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group">
     <label>Accent Color</label>
     <div class="format-options" id="colorOptions">
       <button class="format-option color-option active" data-color="#D97757" onclick="selectColor(this)" title="Terra Cotta">
@@ -528,6 +645,8 @@ let selectedFormat = localStorage.getItem('ac_format') || '4:5';
 let selectedLang = localStorage.getItem('ac_lang') || 'en';
 let selectedSlides = parseInt(localStorage.getItem('ac_slides')) || 7;
 let selectedColor = localStorage.getItem('ac_color') || '#D97757';
+let selectedBg = localStorage.getItem('ac_bg') || '#0D0D0D';
+let selectedText = localStorage.getItem('ac_text') || '#FFFFFF';
 
 // Restore saved preferences on load
 document.addEventListener('DOMContentLoaded', () => {
@@ -543,6 +662,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-slides]').forEach(b => {
     b.classList.toggle('active', b.dataset.slides === String(selectedSlides));
   });
+  // Restore theme
+  const themeMatch = document.querySelector(`.theme-option[data-bg="${selectedBg}"][data-text="${selectedText}"]`);
+  document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
+  if (themeMatch) {
+    themeMatch.classList.add('active');
+  } else {
+    document.getElementById('customThemeBtn').classList.add('active');
+    document.getElementById('bgPicker').value = selectedBg;
+    document.getElementById('textPicker').value = selectedText;
+    document.getElementById('bgHexInput').value = selectedBg;
+    document.getElementById('textHexInput').value = selectedText;
+    updateThemeMiniPreview();
+    document.getElementById('themePickerPanel').classList.add('open');
+  }
+
   // Restore color — check if it matches a preset, otherwise activate custom
   const presetMatch = document.querySelector(`[data-color="${selectedColor}"]`);
   document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
@@ -572,6 +706,67 @@ function selectLang(btn) {
   btn.classList.add('active');
   selectedLang = btn.dataset.lang;
   localStorage.setItem('ac_lang', selectedLang);
+}
+
+function selectTheme(btn) {
+  btn.parentElement.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedBg = btn.dataset.bg;
+  selectedText = btn.dataset.text;
+  localStorage.setItem('ac_bg', selectedBg);
+  localStorage.setItem('ac_text', selectedText);
+  document.getElementById('themePickerPanel').classList.remove('open');
+}
+
+function toggleThemePicker() {
+  const panel = document.getElementById('themePickerPanel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    panel.classList.remove('open');
+  } else {
+    panel.classList.add('open');
+    document.getElementById('bgPicker').value = selectedBg;
+    document.getElementById('textPicker').value = selectedText;
+    document.getElementById('bgHexInput').value = selectedBg;
+    document.getElementById('textHexInput').value = selectedText;
+    updateThemeMiniPreview();
+  }
+  document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
+  document.getElementById('customThemeBtn').classList.add('active');
+}
+
+function pickThemeColors() {
+  selectedBg = document.getElementById('bgPicker').value;
+  selectedText = document.getElementById('textPicker').value;
+  document.getElementById('bgHexInput').value = selectedBg;
+  document.getElementById('textHexInput').value = selectedText;
+  localStorage.setItem('ac_bg', selectedBg);
+  localStorage.setItem('ac_text', selectedText);
+  updateThemeMiniPreview();
+  document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
+  document.getElementById('customThemeBtn').classList.add('active');
+}
+
+function pickThemeHex() {
+  const bg = document.getElementById('bgHexInput').value;
+  const text = document.getElementById('textHexInput').value;
+  if (/^#[0-9A-Fa-f]{6}$/.test(bg)) {
+    selectedBg = bg;
+    document.getElementById('bgPicker').value = bg;
+    localStorage.setItem('ac_bg', selectedBg);
+  }
+  if (/^#[0-9A-Fa-f]{6}$/.test(text)) {
+    selectedText = text;
+    document.getElementById('textPicker').value = text;
+    localStorage.setItem('ac_text', selectedText);
+  }
+  updateThemeMiniPreview();
+}
+
+function updateThemeMiniPreview() {
+  const prev = document.getElementById('themeMiniPreview');
+  prev.style.background = selectedBg;
+  prev.querySelector('.tmp-text').style.color = selectedText;
 }
 
 function selectSlides(btn) {
@@ -663,7 +858,7 @@ async function generate() {
     const response = await fetch('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang, max_slides: selectedSlides, accent_color: selectedColor }),
+      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang, max_slides: selectedSlides, accent_color: selectedColor, bg_color: selectedBg, text_color: selectedText }),
     });
 
     const reader = response.body.getReader();

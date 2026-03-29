@@ -76,9 +76,15 @@ async function renderTemplate(templateName, data = {}, format = '4:5') {
   html = html.replace(/--slide-w:\s*\d+px/, `--slide-w: ${dim.width}px`);
   html = html.replace(/--slide-h:\s*\d+px/, `--slide-h: ${dim.height}px`);
 
-  // Inject custom accent color if provided
+  // Inject custom colors if provided
   if (data.accent_color) {
     html = html.replace(/--accent:\s*#[0-9A-Fa-f]{6}/, `--accent: ${data.accent_color}`);
+  }
+  if (data.bg_color) {
+    html = html.replace(/--bg:\s*#[0-9A-Fa-f]{6}/, `--bg: ${data.bg_color}`);
+  }
+  if (data.text_color) {
+    html = html.replace(/--text:\s*#[0-9A-Fa-f]{6}/, `--text: ${data.text_color}`);
   }
 
   // Replace template variables {{key}}

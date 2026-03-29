@@ -21,6 +21,8 @@ async function generateCarousel(url, options = {}) {
     maxSlides = 7,
     language = 'en',
     accentColor = '#D97757',
+    bgColor = '#0D0D0D',
+    textColor = '#FFFFFF',
     onStatus = () => {},
   } = options;
 
@@ -426,6 +428,8 @@ async function generateCarousel(url, options = {}) {
     }
 
     data.accent_color = accentColor;
+    data.bg_color = bgColor;
+    data.text_color = textColor;
     const png = await renderTemplate(templateName, data, format);
 
     const filename = `slide_${String(i + 1).padStart(2, '0')}.png`;
