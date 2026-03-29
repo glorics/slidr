@@ -416,6 +416,11 @@ body {
         <span class="color-swatch" style="background:#F1C40F"></span>
         <span class="dims">Gold</span>
       </button>
+      <button class="format-option color-option" id="customColorBtn" onclick="document.getElementById('colorPicker').click()" title="Custom">
+        <span class="color-swatch" id="customSwatch" style="background:#888"></span>
+        <span class="dims">Custom</span>
+      </button>
+      <input type="color" id="colorPicker" value="#D97757" style="display:none" oninput="pickCustomColor(this.value)">
     </div>
   </div>
 
@@ -461,10 +466,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('[data-slides]').forEach(b => {
     b.classList.toggle('active', b.dataset.slides === String(selectedSlides));
   });
-  // Restore color
-  document.querySelectorAll('[data-color]').forEach(b => {
-    b.classList.toggle('active', b.dataset.color === selectedColor);
-  });
+  // Restore color — check if it matches a preset, otherwise activate custom
+  const presetMatch = document.querySelector(`[data-color="${selectedColor}"]`);
+  document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
+  if (presetMatch) {
+    presetMatch.classList.add('active');
+  } else {
+    document.getElementById('customColorBtn').classList.add('active');
+    document.getElementById('customSwatch').style.background = selectedColor;
+    document.getElementById('colorPicker').value = selectedColor;
+  }
   // Apply accent color to UI
   applyAccentColor(selectedColor);
 });
@@ -494,6 +505,16 @@ function selectColor(btn) {
   btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedColor = btn.dataset.color;
+  localStorage.setItem('ac_color', selectedColor);
+  applyAccentColor(selectedColor);
+}
+
+function pickCustomColor(color) {
+  // Deselect all presets, activate custom button
+  document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
+  document.getElementById('customColorBtn').classList.add('active');
+  document.getElementById('customSwatch').style.background = color;
+  selectedColor = color;
   localStorage.setItem('ac_color', selectedColor);
   applyAccentColor(selectedColor);
 }
