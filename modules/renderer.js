@@ -87,6 +87,18 @@ async function renderTemplate(templateName, data = {}, format = '4:5') {
     html = html.replace(/--text:\s*#[0-9A-Fa-f]{6}/, `--text: ${data.text_color}`);
   }
 
+  // Inject legend size CSS variables (small / medium / large)
+  const legendSizes = {
+    small:  { num: 36, numFont: 18, text: 24, gap: 12 },
+    medium: { num: 48, numFont: 24, text: 34, gap: 18 },
+    large:  { num: 54, numFont: 27, text: 38, gap: 20 },
+  };
+  const ls = legendSizes[data.legend_size] || legendSizes.medium;
+  html = html.replace(/--legend-num-size:\s*\d+px/, `--legend-num-size: ${ls.num}px`);
+  html = html.replace(/--legend-num-font:\s*\d+px/, `--legend-num-font: ${ls.numFont}px`);
+  html = html.replace(/--legend-text-font:\s*\d+px/, `--legend-text-font: ${ls.text}px`);
+  html = html.replace(/--legend-gap:\s*\d+px/, `--legend-gap: ${ls.gap}px`);
+
   // Replace template variables {{key}}
   // Use a function replacement to avoid special $ interpretation in String.replace()
   for (const [key, value] of Object.entries(data)) {

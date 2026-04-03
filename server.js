@@ -12,6 +12,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 const PORT = process.env.PORT || 3000;
 
+// === SETUP WIZARD (first-launch) ===
+const setupWizard = require('./modules/setup-wizard');
+if (setupWizard.needsSetup()) {
+  app.use(setupWizard.router);
+  app.use((req, res) => res.redirect('/setup'));
+  app.listen(PORT, () => console.log(`Slidr setup wizard: http://localhost:${PORT}/setup`));
+  // Skip the rest of server.js — only the wizard is active
+} else {
+// === Normal app starts here (closed at the bottom of file) ===
+
 // === AUTH ===
 const AUTH_USER = process.env.AUTH_USER || '';
 const AUTH_PASS = process.env.AUTH_PASS || '';
@@ -53,17 +63,17 @@ function loginPageHtml(error = '') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - AutoCarousel</title>
+<title>Login - Slidr</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0A0A0A;
-  --surface: #141414;
-  --border: #2A2A2A;
-  --text: #FFFFFF;
-  --text-muted: #888888;
+  --bg: #FAFAFA;
+  --surface: #FFFFFF;
+  --border: #E4E4E7;
+  --text: #09090B;
+  --text-muted: #71717A;
   --accent: #D97757;
   --radius: 12px;
 }
@@ -83,13 +93,17 @@ body {
   padding: 24px;
 }
 .logo {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   text-align: center;
   margin-bottom: 40px;
   letter-spacing: -0.02em;
+  color: var(--accent);
 }
-.logo span { color: var(--accent); }
+.logo .fade-r { opacity: 0.6; }
+.logo .fade-r2 { opacity: 0.35; }
+.logo .fade-r3 { opacity: 0.18; }
+.logo .fade-r4 { opacity: 0.08; }
 .form-group {
   margin-bottom: 16px;
 }
@@ -144,7 +158,7 @@ body {
 </head>
 <body>
 <div class="login-box">
-  <div class="logo">Auto<span>Carousel</span></div>
+  <div class="logo">Slidr<span class="fade-r">r</span><span class="fade-r2">r</span><span class="fade-r3">r</span><span class="fade-r4">r</span></div>
   ${errorHtml}
   <form method="POST" action="/login">
     <div class="form-group">
@@ -229,7 +243,7 @@ app.get('/render/:template', async (req, res) => {
 
 // === MAIN ENDPOINT: Generate carousel ===
 app.post('/generate', async (req, res) => {
-  const { url, format = '4:5', max_slides = 7, language = 'en', accent_color, bg_color, text_color } = req.body;
+  const { url, format = '4:5', max_slides = 7, language = 'en', accent_color, bg_color, text_color, legend_size } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -254,6 +268,7 @@ app.post('/generate', async (req, res) => {
       accentColor: accent_color || process.env.ACCENT_COLOR || '#D97757',
       bgColor: bg_color || '#0D0D0D',
       textColor: text_color || '#FFFFFF',
+      legendSize: legend_size || 'medium',
       onStatus: (status) => sendEvent('status', status),
     });
 
@@ -307,5 +322,7 @@ process.on('SIGINT', async () => {
 });
 
 app.listen(PORT, () => {
-  console.log(`AutoCarousel server: http://localhost:${PORT}`);
+  console.log(`Slidr server: http://localhost:${PORT}`);
 });
+
+} // end of else (normal app — not setup mode)

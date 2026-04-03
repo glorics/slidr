@@ -1,80 +1,108 @@
 #!/bin/bash
-# install.sh — AutoCarousel on Debian 13 (Hostinger VPS) with Apache
-# Usage: sudo bash install.sh
+# install.sh — Slidr on Debian 12/13 (VPS) with Apache
+# Usage: sudo bash install.sh <your-domain.com>
 
-set -e
+set -euo pipefail
 
-echo "=== AutoCarousel Installer ==="
-echo "Target: Debian 13 + Apache + Node.js 20"
+DOMAIN="${1:?Usage: sudo bash install.sh <domain>}"
+APP_DIR="/opt/slidr"
+OUTPUT_DIR="/var/www/slidr/outputs"
+SERVICE_NAME="slidr"
+
+echo ""
+echo "  ╔══════════════════════════════════╗"
+echo "  ║       Slidr Installer            ║"
+echo "  ║  URL → Tutorial Carousel Slides  ║"
+echo "  ╚══════════════════════════════════╝"
+echo ""
+echo "  Domain: $DOMAIN"
 echo ""
 
-# System update
-apt update && apt upgrade -y
-apt install -y curl wget git apache2 ufw fail2ban
+# Must be root
+if [ "$EUID" -ne 0 ]; then
+  echo "Error: Please run as root (sudo bash install.sh $DOMAIN)"
+  exit 1
+fi
+
+# === System update ===
+echo "[1/8] Updating system packages..."
+apt update -qq && apt upgrade -y -qq
+
+# === Core packages ===
+echo "[2/8] Installing core packages..."
+apt install -y -qq curl wget git apache2 ufw fail2ban > /dev/null
 
 # Firewall
-ufw allow OpenSSH
-ufw allow 'WWW Full'
-ufw --force enable
+ufw allow OpenSSH > /dev/null 2>&1
+ufw allow 'WWW Full' > /dev/null 2>&1
+ufw --force enable > /dev/null 2>&1
 
-# Node.js 20 LTS
+# === Node.js 20 LTS ===
+echo "[3/8] Installing Node.js 20..."
 if ! command -v node &> /dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-  apt install -y nodejs
+  curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
+  apt install -y -qq nodejs > /dev/null
 fi
-echo "Node.js $(node -v)"
+echo "  Node.js $(node -v)"
 
-# Chromium dependencies for Puppeteer
-apt install -y chromium chromium-sandbox fonts-liberation \
+# === Chromium for Puppeteer ===
+echo "[4/8] Installing Chromium..."
+apt install -y -qq chromium chromium-sandbox fonts-liberation \
   fonts-noto-color-emoji fonts-noto-cjk libatk1.0-0 \
   libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 \
   libxdamage1 libxrandr2 libgbm1 libnss3 libxss1 libasound2 \
   2>/dev/null || true
 
-# Project directory
-APP_DIR="/opt/autocarousel"
-OUTPUT_DIR="/var/www/autocarousel/outputs"
+# === Project files ===
+echo "[5/8] Setting up application..."
 mkdir -p "$APP_DIR" "$OUTPUT_DIR"
 
 # Copy project files (if running from project root)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 if [ -f "$PROJECT_DIR/server.js" ]; then
-  echo "Copying project files to $APP_DIR..."
-  cp -r "$PROJECT_DIR"/server.js "$APP_DIR/"
-  cp -r "$PROJECT_DIR"/package.json "$APP_DIR/"
+  cp "$PROJECT_DIR"/server.js "$APP_DIR/"
+  cp "$PROJECT_DIR"/package.json "$APP_DIR/"
+  cp "$PROJECT_DIR"/package-lock.json "$APP_DIR/" 2>/dev/null || true
   cp -r "$PROJECT_DIR"/modules "$APP_DIR/"
   cp -r "$PROJECT_DIR"/templates "$APP_DIR/"
   cp -r "$PROJECT_DIR"/public "$APP_DIR/"
-  [ -d "$PROJECT_DIR/assets" ] && cp -r "$PROJECT_DIR"/assets "$APP_DIR/"
+  cp "$PROJECT_DIR"/.env.example "$APP_DIR/" 2>/dev/null || true
+  mkdir -p "$APP_DIR/scripts"
+  cp "$PROJECT_DIR"/scripts/cleanup.sh "$APP_DIR/scripts/" 2>/dev/null || true
 fi
 
 # Install npm dependencies
 cd "$APP_DIR"
-npm install --production
+npm install --production --quiet 2>/dev/null
 
-# Environment file (only create if not exists)
+# === Environment file (empty — triggers Setup Wizard) ===
 if [ ! -f "$APP_DIR/.env" ]; then
   cat > "$APP_DIR/.env" << 'ENVEOF'
 PORT=3000
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=
 SCREENSHOTONE_API_KEY=
+STEEL_API_KEY=
 SERPAPI_KEY=
-OUTPUT_DIR=/var/www/autocarousel/outputs
+OUTPUT_DIR=/var/www/slidr/outputs
 NODE_ENV=production
 MOCK_AGENT=false
+AUTH_USER=
+AUTH_PASS=
 ENVEOF
-  echo "Created .env — edit it with your API keys: nano $APP_DIR/.env"
+  echo "  .env created (Setup Wizard will run on first visit)"
+else
+  echo "  .env already exists — keeping current configuration"
 fi
 
-# Apache modules
-a2enmod proxy proxy_http proxy_wstunnel headers rewrite
-a2dissite 000-default 2>/dev/null || true
+# === Apache ===
+echo "[6/8] Configuring Apache..."
+a2enmod proxy proxy_http proxy_wstunnel headers rewrite > /dev/null 2>&1
+a2dissite 000-default > /dev/null 2>&1 || true
 
-# Apache virtual host
-cat > /etc/apache2/sites-available/autocarousel.conf << 'APACHEEOF'
+cat > /etc/apache2/sites-available/${SERVICE_NAME}.conf << APACHEEOF
 <VirtualHost *:80>
-    ServerName autocarousel.glorics.com
+    ServerName ${DOMAIN}
 
     # Proxy to Node.js
     ProxyPreserveHost On
@@ -89,8 +117,8 @@ cat > /etc/apache2/sites-available/autocarousel.conf << 'APACHEEOF'
     SetEnv proxy-sendchunked 1
 
     # Serve static outputs directly via Apache
-    Alias /outputs/ /var/www/autocarousel/outputs/
-    <Directory /var/www/autocarousel/outputs/>
+    Alias /outputs/ ${OUTPUT_DIR}/
+    <Directory ${OUTPUT_DIR}/>
         Options -Indexes
         AllowOverride None
         Require all granted
@@ -98,28 +126,29 @@ cat > /etc/apache2/sites-available/autocarousel.conf << 'APACHEEOF'
         ExpiresDefault "access plus 24 hours"
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/autocarousel-error.log
-    CustomLog ${APACHE_LOG_DIR}/autocarousel-access.log combined
+    ErrorLog \${APACHE_LOG_DIR}/${SERVICE_NAME}-error.log
+    CustomLog \${APACHE_LOG_DIR}/${SERVICE_NAME}-access.log combined
 </VirtualHost>
 APACHEEOF
 
-a2ensite autocarousel
-apache2ctl configtest && systemctl restart apache2
+a2ensite ${SERVICE_NAME} > /dev/null 2>&1
+apache2ctl configtest > /dev/null 2>&1 && systemctl restart apache2
 
-# Systemd service
-cat > /etc/systemd/system/autocarousel.service << 'SVCEOF'
+# === Systemd service ===
+echo "[7/8] Creating systemd service..."
+cat > /etc/systemd/system/${SERVICE_NAME}.service << SVCEOF
 [Unit]
-Description=AutoCarousel - URL to Annotated Tutorial Images
+Description=Slidr - URL to Tutorial Carousel Slides
 After=network.target
 
 [Service]
 Type=simple
-User=www-data
-WorkingDirectory=/opt/autocarousel
+User=root
+WorkingDirectory=${APP_DIR}
 ExecStart=/usr/bin/node server.js
 Restart=always
 RestartSec=5
-EnvironmentFile=/opt/autocarousel/.env
+EnvironmentFile=${APP_DIR}/.env
 Environment=PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 [Install]
@@ -127,24 +156,42 @@ WantedBy=multi-user.target
 SVCEOF
 
 # Set ownership
-chown -R www-data:www-data "$APP_DIR" "$OUTPUT_DIR"
+chown -R root:root "$APP_DIR" "$OUTPUT_DIR"
 
 systemctl daemon-reload
-systemctl enable autocarousel
-systemctl start autocarousel
+systemctl enable ${SERVICE_NAME} > /dev/null 2>&1
+systemctl start ${SERVICE_NAME}
 
-# Install cleanup cron
-cp "$(dirname "$0")/cleanup.sh" /opt/autocarousel/scripts/cleanup.sh 2>/dev/null || true
-echo "0 */6 * * * /bin/bash /opt/autocarousel/scripts/cleanup.sh 2>/dev/null" | crontab -u root -
+# Cleanup cron (every 6 hours)
+echo "0 */6 * * * /bin/bash ${APP_DIR}/scripts/cleanup.sh 2>/dev/null" | crontab -u root -
 
+# === SSL (optional) ===
 echo ""
-echo "=== Installation complete ==="
-echo "App:    http://autocarousel.glorics.com"
-echo "Health: http://autocarousel.glorics.com/health"
-echo "Config: nano $APP_DIR/.env"
-echo "Logs:   journalctl -u autocarousel -f"
+echo "[8/8] SSL Setup"
+read -p "  Set up HTTPS with Let's Encrypt? (y/N) " -n 1 -r
 echo ""
-echo "Next steps:"
-echo "1. Edit .env with your API keys"
-echo "2. systemctl restart autocarousel"
-echo "3. Set up DNS A record for autocarousel.glorics.com"
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+  apt install -y -qq certbot python3-certbot-apache > /dev/null
+  certbot --apache -d "$DOMAIN" --non-interactive --agree-tos --redirect -m "admin@$DOMAIN" || {
+    echo "  SSL setup failed. You can retry later: certbot --apache -d $DOMAIN"
+  }
+  echo "  SSL configured!"
+fi
+
+# === Done ===
+echo ""
+echo "  ╔══════════════════════════════════════════╗"
+echo "  ║          Installation complete!          ║"
+echo "  ╠══════════════════════════════════════════╣"
+echo "  ║  Open your browser:                      ║"
+echo "  ║  http://${DOMAIN}                        ║"
+echo "  ║                                          ║"
+echo "  ║  The Setup Wizard will guide you         ║"
+echo "  ║  through API key configuration.          ║"
+echo "  ╠══════════════════════════════════════════╣"
+echo "  ║  Useful commands:                        ║"
+echo "  ║  Logs:    journalctl -u ${SERVICE_NAME} -f   ║"
+echo "  ║  Status:  systemctl status ${SERVICE_NAME}    ║"
+echo "  ║  Restart: systemctl restart ${SERVICE_NAME}   ║"
+echo "  ╚══════════════════════════════════════════╝"
+echo ""

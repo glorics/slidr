@@ -1,24 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AutoCarousel</title>
+<title>Slidr</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
+/* ============================================
+   THEME SYSTEM
+   ============================================ */
 :root {
-  --bg: #0A0A0A;
-  --surface: #141414;
-  --surface-2: #1E1E1E;
-  --border: #2A2A2A;
-  --text: #FFFFFF;
-  --text-muted: #888888;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --transition: 0.2s ease;
   --accent: #D97757;
   --accent-hover: #E08A6A;
-  --accent-dim: rgba(217, 119, 87, 0.12);
-  --radius: 12px;
+  --accent-dim: rgba(217, 119, 87, 0.10);
+}
+
+[data-theme="dark"] {
+  --bg: #09090B;
+  --bg-raised: #111113;
+  --surface: #18181B;
+  --surface-hover: #1F1F23;
+  --border: #27272A;
+  --border-hover: #3F3F46;
+  --text: #FAFAFA;
+  --text-secondary: #D4D4D8;
+  --text-muted: #A1A1AA;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+  --input-bg: #111113;
+}
+
+[data-theme="light"] {
+  --bg: #FAFAFA;
+  --bg-raised: #FFFFFF;
+  --surface: #F4F4F5;
+  --surface-hover: #E4E4E7;
+  --border: #E4E4E7;
+  --border-hover: #D4D4D8;
+  --text: #09090B;
+  --text-secondary: #52525B;
+  --text-muted: #A1A1AA;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+  --input-bg: #FFFFFF;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -28,606 +57,881 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  transition: background var(--transition), color var(--transition);
 }
 
-/* === HEADER === */
+/* ============================================
+   HEADER
+   ============================================ */
 .header {
-  padding: 24px 40px;
   border-bottom: 1px solid var(--border);
+  background: var(--bg-raised);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.header-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
 .logo {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+}
+.logo .fade-r { opacity: 0.6; }
+.logo .fade-r2 { opacity: 0.35; }
+.logo .fade-r3 { opacity: 0.18; }
+.logo .fade-r4 { opacity: 0.08; }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.logo span { color: var(--accent); }
-
-.header-links a {
-  color: var(--text-muted);
-  text-decoration: none;
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
   font-size: 13px;
-  margin-left: 24px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
 }
-.header-links a:hover { color: var(--text); }
+.header-btn:hover {
+  background: var(--surface);
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.header-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
 
-/* === MAIN === */
+/* Status badge */
+.status-badge { cursor: default; pointer-events: none; }
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+  transition: background 0.3s ease;
+}
+.status-dot.online { background: #22C55E; box-shadow: 0 0 6px rgba(34,197,94,0.5); }
+.status-dot.offline { background: #EF4444; box-shadow: 0 0 6px rgba(239,68,68,0.5); }
+
+/* Theme toggle */
+.theme-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.theme-toggle .icon-sun,
+.theme-toggle .icon-moon { display: none; }
+[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+[data-theme="light"] .theme-toggle .icon-moon { display: block; }
+
+/* ============================================
+   MAIN LAYOUT
+   ============================================ */
 .main {
   max-width: 720px;
   margin: 0 auto;
-  padding: 60px 24px;
+  padding: 48px 24px 80px;
 }
 
 .hero-title {
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 900;
   line-height: 1.1;
   letter-spacing: -0.03em;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .hero-sub {
-  font-size: 16px;
+  font-size: 15px;
   color: var(--text-muted);
-  margin-bottom: 48px;
-  line-height: 1.5;
+  margin-bottom: 36px;
+  line-height: 1.6;
 }
 
-/* === FORM === */
-.form-group {
+/* ============================================
+   URL INPUT + GENERATE (inline)
+   ============================================ */
+.input-row {
+  display: flex;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
-.form-group label {
-  display: block;
-  font-size: 13px;
+.url-input {
+  flex: 1;
+  padding: 14px 18px;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+.url-input:focus { border-color: var(--accent); }
+.url-input::placeholder { color: var(--text-muted); }
+
+.btn-generate {
+  padding: 14px 28px;
+  background: var(--accent);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), opacity var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-generate:hover { background: var(--accent-hover); }
+.btn-generate:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ============================================
+   QUICK OPTIONS (Language + Format — always visible)
+   ============================================ */
+.quick-options {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.option-group {
+  flex: 1;
+}
+
+.option-label {
+  font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   margin-bottom: 8px;
+  display: block;
+}
+
+.pill-row {
+  display: flex;
+  gap: 6px;
+}
+
+.pill {
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+.pill:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.pill.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.pill .sub {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.pill.active .sub { color: var(--accent); opacity: 0.7; }
+
+/* ============================================
+   SLIDE-OUT SETTINGS PANEL
+   ============================================ */
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.settings-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settings-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 380px;
+  max-width: 90vw;
+  background: var(--bg-raised);
+  border-left: 1px solid var(--border);
+  z-index: 201;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background var(--transition);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+}
+.settings-drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.drawer-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+}
+.drawer-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.drawer-close:hover { background: var(--surface); color: var(--text); }
+.drawer-close svg { width: 16px; height: 16px; }
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.settings-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.url-input {
-  width: 100%;
-  padding: 16px 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 16px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
+.setting-label .hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
 }
 
-.url-input:focus {
-  border-color: var(--accent);
-}
-
-.url-input::placeholder {
-  color: #555;
-}
-
-/* Format selector */
-.format-options {
+/* Settings pills */
+.setting-pills {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.format-option {
-  flex: 1;
-  padding: 12px 16px;
+.setting-pill {
+  padding: 10px 16px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  font-size: 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
+  transition: all var(--transition);
   text-align: center;
-  transition: all 0.2s;
+  min-width: 60px;
 }
-
-.format-option:hover {
-  border-color: #444;
+.setting-pill:hover {
+  border-color: var(--border-hover);
   color: var(--text);
 }
-
-.format-option.active {
+.setting-pill.active {
   border-color: var(--accent);
   background: var(--accent-dim);
   color: var(--accent);
 }
 
-.format-option .ratio { font-weight: 700; display: block; margin-bottom: 2px; }
-.format-option .dims { font-size: 11px; color: var(--text-muted); }
-
-.color-swatch {
-  display: block;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  margin: 0 auto 4px;
-  border: 2px solid rgba(255,255,255,0.15);
-  transition: transform 0.2s, border-color 0.2s;
-}
-.color-option.active .color-swatch {
-  transform: scale(1.2);
-  border-color: rgba(255,255,255,0.6);
-}
-
-/* Custom color picker accordion */
-.custom-picker-panel {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, margin-top 0.3s ease, opacity 0.3s ease;
-  opacity: 0;
-  margin-top: 0;
-}
-.custom-picker-panel.open {
-  max-height: 120px;
-  opacity: 1;
-  margin-top: 12px;
-}
-.custom-picker-inner {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-}
-.custom-picker-row {
+/* Slider for max slides */
+.slider-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
-.custom-picker-row input[type="color"] {
-  width: 48px;
-  height: 48px;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  background: none;
-  padding: 0;
-}
-.custom-picker-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-.custom-picker-row input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 10px; }
-.custom-picker-row input[type="color"]::-moz-color-swatch { border: 2px solid var(--border); border-radius: 10px; }
-.custom-picker-info {
+.slide-range {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.custom-picker-label {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.custom-picker-hex {
-  width: 100px;
-  padding: 6px 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text);
-  font-size: 14px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: var(--surface);
+  border-radius: 3px;
   outline: none;
+  cursor: pointer;
+  border: 1px solid var(--border);
 }
-.custom-picker-hex:focus { border-color: var(--accent); }
-.custom-picker-preview {
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+.slide-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid var(--bg-raised);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  transition: transform 0.15s ease;
+}
+.slide-range::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.slide-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid var(--bg-raised);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.slider-value {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--accent);
+  min-width: 32px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.slider-estimate {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+  margin-top: 8px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.setting-pill .val { display: block; font-weight: 700; margin-bottom: 2px; }
+.setting-pill .desc { display: block; font-size: 10px; color: var(--text-muted); }
+.setting-pill.active .desc { color: var(--accent); opacity: 0.7; }
+
+/* Color swatches */
+.color-swatch {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin: 0 auto 4px;
   border: 2px solid var(--border);
-  transition: background 0.2s;
+  transition: transform var(--transition), border-color var(--transition);
+}
+.setting-pill.active .color-swatch {
+  transform: scale(1.15);
+  border-color: var(--text);
 }
 
 /* Theme previews */
-.theme-preview {
+.theme-swatch {
   display: block;
-  width: 32px;
+  width: 36px;
   height: 24px;
   border-radius: 6px;
   margin: 0 auto 4px;
-  border: 2px solid rgba(255,255,255,0.15);
+  border: 2px solid var(--border);
   position: relative;
   overflow: hidden;
 }
-.theme-option.active .theme-preview {
-  border-color: rgba(255,255,255,0.6);
-  transform: scale(1.1);
-  transition: transform 0.2s;
+.setting-pill.active .theme-swatch {
+  border-color: var(--text);
+  transform: scale(1.05);
+  transition: transform var(--transition);
 }
-.dark-preview { background: #0D0D0D; }
-.dark-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #FFF; }
-.light-preview { background: #FFFFFF; }
-.light-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #1A1A1A; }
-.navy-preview { background: #1A1B2E; }
-.navy-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #E8E8F0; }
-.warm-preview { background: #F5F0EB; }
-.warm-preview::after { content: 'A'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #2C2420; }
-.custom-theme-preview { background: linear-gradient(135deg, #333 50%, #ccc 50%); }
-.custom-theme-preview::after { content: '?'; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 12px; font-weight: 700; color: #FFF; }
+.theme-swatch::after {
+  content: 'A';
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ts-dark { background: #0D0D0D; }
+.ts-dark::after { color: #FFF; }
+.ts-light { background: #FFFFFF; }
+.ts-light::after { color: #1A1A1A; }
+.ts-navy { background: #1A1B2E; }
+.ts-navy::after { color: #E8E8F0; }
+.ts-warm { background: #F5F0EB; }
+.ts-warm::after { color: #2C2420; }
+.ts-custom { background: linear-gradient(135deg, #333 50%, #ccc 50%); }
+.ts-custom::after { content: '⚙'; color: #FFF; font-size: 10px; top: 3px; }
 
-/* Theme picker panel */
-.theme-pick-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
+/* Custom pickers */
+.picker-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+  opacity: 0;
+  margin-top: 0;
 }
-.theme-pick-row {
+.picker-panel.open {
+  max-height: 120px;
+  opacity: 1;
+  margin-top: 10px;
+}
+.picker-inner {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 14px;
 }
-.theme-pick-row input[type="color"] {
-  width: 36px;
-  height: 36px;
+.picker-inner input[type="color"] {
+  width: 40px;
+  height: 40px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   background: none;
   padding: 0;
 }
-.theme-pick-row input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-.theme-pick-row input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 8px; }
-.theme-pick-row input[type="color"]::-moz-color-swatch { border: 2px solid var(--border); border-radius: 8px; }
-.theme-mini-preview {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
+.picker-inner input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+.picker-inner input[type="color"]::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 8px; }
+.picker-inner input[type="color"]::-moz-color-swatch { border: 2px solid var(--border); border-radius: 8px; }
+.picker-hex {
+  width: 90px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  outline: none;
+}
+.picker-hex:focus { border-color: var(--accent); }
+.picker-group { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.picker-group-label { font-size: 11px; color: var(--text-muted); }
+.picker-group-row { display: flex; align-items: center; gap: 8px; }
+.picker-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
   border: 2px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0D0D0D;
   flex-shrink: 0;
 }
-.theme-mini-preview .tmp-text {
-  font-size: 24px;
-  font-weight: 800;
-  color: #FFFFFF;
-}
+.picker-preview .pp-text { font-size: 20px; font-weight: 800; }
 
-/* Generate button */
-.btn-generate {
-  width: 100%;
-  padding: 18px;
-  background: var(--accent);
-  color: #FFFFFF;
-  border: none;
-  border-radius: var(--radius);
-  font-size: 16px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.2s;
-  margin-top: 8px;
-}
-
-.btn-generate:hover { background: var(--accent-hover); }
-.btn-generate:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* === PROGRESS === */
+/* ============================================
+   PROGRESS — Agent Pipeline View
+   ============================================ */
 .progress-section {
   display: none;
-  margin-top: 40px;
+  margin-top: 32px;
 }
-
 .progress-section.visible { display: block; }
 
-.progress-bar-wrap {
-  height: 4px;
-  background: var(--surface-2);
-  border-radius: 2px;
-  margin-bottom: 16px;
-  overflow: hidden;
+/* Current agent hero */
+.progress-hero {
+  text-align: center;
+  padding: 28px 0 20px;
+}
+.progress-hero-agent {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.progress-hero-msg {
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-height: 20px;
+}
+.progress-timer {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+  margin-top: 10px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-variant-numeric: tabular-nums;
 }
 
+/* Spinner animation */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Progress bar */
+.progress-bar-wrap {
+  height: 4px;
+  background: var(--surface);
+  border-radius: 2px;
+  margin: 16px 0;
+  overflow: hidden;
+}
 .progress-bar {
   height: 100%;
   background: var(--accent);
   border-radius: 2px;
   width: 0%;
-  transition: width 0.5s ease;
+  transition: width 0.6s ease;
 }
 
-.progress-log {
+/* Agent pipeline steps */
+.pipeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  max-height: 180px;
-  overflow-y: auto;
-  font-size: 13px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  color: var(--text-muted);
-  line-height: 1.8;
+  border-radius: var(--radius-sm);
+  padding: 6px 0;
+  transition: background var(--transition), border-color var(--transition);
 }
 
-.progress-log .log-line {
+.pipeline-step {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  font-size: 13px;
+  transition: opacity 0.3s ease;
 }
+.pipeline-step.waiting { opacity: 0.35; }
+.pipeline-step.active { opacity: 1; }
+.pipeline-step.done { opacity: 0.7; }
 
-.progress-log .log-step {
+.step-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-icon .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.pipeline-step.active .step-icon .dot { display: none; }
+.pipeline-step.active .step-icon .mini-spinner { display: block; }
+.pipeline-step.done .step-icon .dot { display: none; }
+.pipeline-step.done .step-icon .check { display: block; }
+.step-icon .mini-spinner {
+  display: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.step-icon .check {
+  display: none;
   color: var(--accent);
-  font-weight: 600;
-  min-width: 80px;
+  font-size: 14px;
+  line-height: 1;
 }
 
-/* === RESULTS === */
+@keyframes fadeCheck { from { opacity: 0; transform: scale(0.5); } to { opacity: 1; transform: scale(1); } }
+.pipeline-step.done .step-icon .check { animation: fadeCheck 0.3s ease; }
+
+.step-name {
+  font-weight: 600;
+  color: var(--text);
+  min-width: 100px;
+}
+.pipeline-step.waiting .step-name { color: var(--text-muted); }
+
+.step-status {
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+.pipeline-step.active .step-status { color: var(--accent); }
+
+/* ============================================
+   RESULTS
+   ============================================ */
 .results-section {
   display: none;
-  margin-top: 48px;
+  margin-top: 40px;
 }
-
 .results-section.visible { display: block; }
 
 .results-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
-
 .results-header h2 {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
 }
-
 .btn-download {
-  padding: 10px 24px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-size: 14px;
+  padding: 10px 22px;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #FFFFFF;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   text-decoration: none;
-  transition: border-color 0.2s;
+  transition: opacity var(--transition);
 }
-
-.btn-download:hover { border-color: var(--accent); color: var(--accent); }
+.btn-download:hover { opacity: 0.9; }
 
 .slides-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
 }
-
 .slide-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
-
-.slide-card:hover { border-color: #444; }
-
-.slide-card img {
-  width: 100%;
-  display: block;
+.slide-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-lg);
 }
-
+.slide-card img { width: 100%; display: block; }
 .slide-card .slide-label {
-  padding: 10px 14px;
-  font-size: 13px;
+  padding: 8px 12px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--text-muted);
 }
 
-/* === ERROR === */
+/* Error */
 .error-msg {
   display: none;
-  margin-top: 20px;
-  padding: 16px 20px;
-  background: rgba(220, 53, 69, 0.1);
-  border: 1px solid rgba(220, 53, 69, 0.3);
-  border-radius: var(--radius);
+  margin-top: 16px;
+  padding: 14px 18px;
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  border-radius: var(--radius-sm);
   color: #FF6B7A;
-  font-size: 14px;
+  font-size: 13px;
 }
-
 .error-msg.visible { display: block; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 600px) {
+  .header { padding: 12px 16px; }
+  .main { padding: 32px 16px 60px; }
+  .hero-title { font-size: 28px; }
+  .input-row { flex-direction: column; }
+  .btn-generate { width: 100%; }
+  .quick-options { flex-direction: column; gap: 16px; }
+}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <div class="logo">Auto<span>Carousel</span></div>
-  <div class="header-links">
-    <a href="/health">API Status</a>
-    <a href="/logout">Logout</a>
+  <div class="header-inner">
+  <div class="header-left">
+    <div class="logo">Slidr<span class="fade-r">r</span><span class="fade-r2">r</span><span class="fade-r3">r</span><span class="fade-r4">r</span></div>
+  </div>
+  <div class="header-right">
+    <button class="header-btn theme-toggle" onclick="toggleUITheme()" title="Toggle light/dark">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="header-btn" onclick="toggleSettingsDrawer()" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <span class="header-btn status-badge" id="statusBadge" title="API Status">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Checking...</span>
+    </span>
+    <a class="header-btn" href="/logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </div>
   </div>
 </div>
 
 <div class="main">
-  <h1 class="hero-title">URL &rarr; Carousel</h1>
-  <p class="hero-sub">Paste any URL. Get annotated tutorial slides ready for LinkedIn, Instagram &amp; more.</p>
-
-  <!-- Form -->
-  <div class="form-group">
-    <label>URL</label>
-    <input type="url" class="url-input" id="urlInput" placeholder="https://docs.anthropic.com/en/docs/..." autofocus>
+  <!-- URL + Generate inline -->
+  <div class="input-row">
+    <input type="url" class="url-input" id="urlInput" placeholder="https://stripe.com, https://docs.github.com, ..." autofocus>
+    <button class="btn-generate" id="btnGenerate" onclick="generate()">Generate</button>
   </div>
 
-  <div class="form-group">
-    <label>Language</label>
-    <div class="format-options">
-      <button class="format-option active" data-lang="en" onclick="selectLang(this)">
-        <span class="ratio">EN</span>
-        <span class="dims">English</span>
-      </button>
-      <button class="format-option" data-lang="fr" onclick="selectLang(this)">
-        <span class="ratio">FR</span>
-        <span class="dims">French</span>
-      </button>
-      <button class="format-option" data-lang="es" onclick="selectLang(this)">
-        <span class="ratio">ES</span>
-        <span class="dims">Spanish</span>
-      </button>
-      <button class="format-option" data-lang="de" onclick="selectLang(this)">
-        <span class="ratio">DE</span>
-        <span class="dims">German</span>
-      </button>
+  <!-- Max slides slider -->
+  <div class="setting-row" style="margin-bottom: 20px;">
+    <span class="option-label">Max slides <span style="font-weight:400;text-transform:none;letter-spacing:0">(may produce fewer for best quality)</span></span>
+    <div class="slider-row">
+      <input type="range" class="slide-range" id="slidesRange" min="3" max="9" value="7" oninput="updateSlidesSlider(this.value)">
+      <span class="slider-value" id="slidesValue">7</span>
     </div>
+    <div class="slider-estimate" id="slidesEstimate">Estimated cost: ~$0.08 – $0.14</div>
   </div>
 
-  <div class="form-group">
-    <label>Format</label>
-    <div class="format-options">
-      <button class="format-option" data-format="3:4" onclick="selectFormat(this)">
-        <span class="ratio">3:4</span>
-        <span class="dims">1080 &times; 1440</span>
-      </button>
-      <button class="format-option active" data-format="4:5" onclick="selectFormat(this)">
-        <span class="ratio">4:5</span>
-        <span class="dims">1080 &times; 1350</span>
-      </button>
-      <button class="format-option" data-format="9:16" onclick="selectFormat(this)">
-        <span class="ratio">9:16</span>
-        <span class="dims">1080 &times; 1920</span>
-      </button>
+  <!-- Quick options: Language + Format -->
+  <div class="quick-options">
+    <div class="option-group">
+      <span class="option-label">Language</span>
+      <div class="pill-row">
+        <button class="pill active" data-lang="en" onclick="selectLang(this)">EN</button>
+        <button class="pill" data-lang="fr" onclick="selectLang(this)">FR</button>
+        <button class="pill" data-lang="es" onclick="selectLang(this)">ES</button>
+        <button class="pill" data-lang="de" onclick="selectLang(this)">DE</button>
+      </div>
     </div>
-  </div>
-
-  <div class="form-group">
-    <label>Slides</label>
-    <div class="format-options">
-      <button class="format-option" data-slides="5" onclick="selectSlides(this)">
-        <span class="ratio">5</span>
-        <span class="dims">Short</span>
-      </button>
-      <button class="format-option active" data-slides="7" onclick="selectSlides(this)">
-        <span class="ratio">7</span>
-        <span class="dims">Standard</span>
-      </button>
-      <button class="format-option" data-slides="9" onclick="selectSlides(this)">
-        <span class="ratio">9</span>
-        <span class="dims">Detailed</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="form-group">
-    <label>Theme</label>
-    <div class="format-options">
-      <button class="format-option theme-option active" data-bg="#0D0D0D" data-text="#FFFFFF" onclick="selectTheme(this)">
-        <span class="theme-preview dark-preview"></span>
-        <span class="dims">Dark</span>
-      </button>
-      <button class="format-option theme-option" data-bg="#FFFFFF" data-text="#1A1A1A" onclick="selectTheme(this)">
-        <span class="theme-preview light-preview"></span>
-        <span class="dims">Light</span>
-      </button>
-      <button class="format-option theme-option" data-bg="#1A1B2E" data-text="#E8E8F0" onclick="selectTheme(this)">
-        <span class="theme-preview navy-preview"></span>
-        <span class="dims">Navy</span>
-      </button>
-      <button class="format-option theme-option" data-bg="#F5F0EB" data-text="#2C2420" onclick="selectTheme(this)">
-        <span class="theme-preview warm-preview"></span>
-        <span class="dims">Warm</span>
-      </button>
-      <button class="format-option theme-option" id="customThemeBtn" onclick="toggleThemePicker()">
-        <span class="theme-preview custom-theme-preview" id="customThemePreview"></span>
-        <span class="dims">Custom</span>
-      </button>
-    </div>
-    <div class="custom-picker-panel" id="themePickerPanel">
-      <div class="custom-picker-inner">
-        <div class="custom-picker-row">
-          <div class="theme-pick-group">
-            <span class="custom-picker-label">Background</span>
-            <div class="theme-pick-row">
-              <input type="color" id="bgPicker" value="#0D0D0D" oninput="pickThemeColors()">
-              <input type="text" class="custom-picker-hex" id="bgHexInput" value="#0D0D0D" maxlength="7" oninput="pickThemeHex()">
-            </div>
-          </div>
-          <div class="theme-pick-group">
-            <span class="custom-picker-label">Text</span>
-            <div class="theme-pick-row">
-              <input type="color" id="textPicker" value="#FFFFFF" oninput="pickThemeColors()">
-              <input type="text" class="custom-picker-hex" id="textHexInput" value="#FFFFFF" maxlength="7" oninput="pickThemeHex()">
-            </div>
-          </div>
-          <div class="theme-mini-preview" id="themeMiniPreview">
-            <span class="tmp-text">Aa</span>
-          </div>
-        </div>
+    <div class="option-group">
+      <span class="option-label">Format</span>
+      <div class="pill-row">
+        <button class="pill" data-format="3:4" onclick="selectFormat(this)">3:4</button>
+        <button class="pill active" data-format="4:5" onclick="selectFormat(this)">4:5</button>
+        <button class="pill" data-format="9:16" onclick="selectFormat(this)">9:16</button>
       </div>
     </div>
   </div>
 
-  <div class="form-group">
-    <label>Accent Color</label>
-    <div class="format-options" id="colorOptions">
-      <button class="format-option color-option active" data-color="#D97757" onclick="selectColor(this)" title="Terra Cotta">
-        <span class="color-swatch" style="background:#D97757"></span>
-        <span class="dims">Terra Cotta</span>
-      </button>
-      <button class="format-option color-option" data-color="#E05C8A" onclick="selectColor(this)" title="Pink">
-        <span class="color-swatch" style="background:#E05C8A"></span>
-        <span class="dims">Pink</span>
-      </button>
-      <button class="format-option color-option" data-color="#7C5CFC" onclick="selectColor(this)" title="Purple">
-        <span class="color-swatch" style="background:#7C5CFC"></span>
-        <span class="dims">Purple</span>
-      </button>
-      <button class="format-option color-option" data-color="#3B9EFF" onclick="selectColor(this)" title="Blue">
-        <span class="color-swatch" style="background:#3B9EFF"></span>
-        <span class="dims">Blue</span>
-      </button>
-      <button class="format-option color-option" data-color="#2ECC71" onclick="selectColor(this)" title="Green">
-        <span class="color-swatch" style="background:#2ECC71"></span>
-        <span class="dims">Green</span>
-      </button>
-      <button class="format-option color-option" data-color="#F1C40F" onclick="selectColor(this)" title="Gold">
-        <span class="color-swatch" style="background:#F1C40F"></span>
-        <span class="dims">Gold</span>
-      </button>
-      <button class="format-option color-option" id="customColorBtn" onclick="toggleCustomPicker()" title="Custom">
-        <span class="color-swatch" id="customSwatch" style="background:#888"></span>
-        <span class="dims">Custom</span>
-      </button>
-    </div>
-    <div class="custom-picker-panel" id="customPickerPanel">
-      <div class="custom-picker-inner">
-        <div class="custom-picker-row">
-          <input type="color" id="colorPicker" value="#D97757" oninput="pickCustomColor(this.value)">
-          <div class="custom-picker-info">
-            <span class="custom-picker-label">Pick any color</span>
-            <input type="text" class="custom-picker-hex" id="hexInput" value="#D97757" maxlength="7" placeholder="#000000" oninput="pickCustomHex(this.value)">
-          </div>
-          <div class="custom-picker-preview" id="customPreview" style="background:#D97757"></div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Settings drawer is outside main, at end of body -->
 
-  <button class="btn-generate" id="btnGenerate" onclick="generate()">Generate Carousel</button>
-
+  <!-- Error -->
   <div class="error-msg" id="errorMsg"></div>
 
   <!-- Progress -->
   <div class="progress-section" id="progressSection">
+    <div class="progress-hero">
+      <div class="progress-hero-agent"><span class="spinner"></span> <span id="heroAgent">Starting...</span></div>
+      <div class="progress-hero-msg" id="heroMsg"></div>
+      <div class="progress-timer" id="progressTimer">0:00</div>
+    </div>
     <div class="progress-bar-wrap">
       <div class="progress-bar" id="progressBar"></div>
     </div>
-    <div class="progress-log" id="progressLog"></div>
+    <div class="pipeline-steps" id="pipelineSteps">
+      <div class="pipeline-step waiting" data-pipeline="scraping">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">Scraper</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+      <div class="pipeline-step waiting" data-pipeline="analyzing">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">AI Agents 1-3</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+      <div class="pipeline-step waiting" data-pipeline="searching">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">Image Search</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+      <div class="pipeline-step waiting" data-pipeline="capturing">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">Capture</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+      <div class="pipeline-step waiting" data-pipeline="validating">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">Agent 4 — Validator</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+      <div class="pipeline-step waiting" data-pipeline="refining">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">Agent 5-6 — Annotator</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+      <div class="pipeline-step waiting" data-pipeline="rendering">
+        <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
+        <span class="step-name">Renderer</span>
+        <span class="step-status" data-status>waiting</span>
+      </div>
+    </div>
   </div>
 
   <!-- Results -->
@@ -640,29 +944,113 @@ body {
   </div>
 </div>
 
+<!-- Settings Overlay + Drawer -->
+<div class="settings-overlay" id="settingsOverlay" onclick="toggleSettingsDrawer()"></div>
+<div class="settings-drawer" id="settingsDrawer">
+  <div class="drawer-header">
+    <h3>Settings</h3>
+    <button class="drawer-close" onclick="toggleSettingsDrawer()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+    <div class="settings-inner">
+
+      <!-- Legend size -->
+      <div class="setting-row">
+        <span class="setting-label">Legend size</span>
+        <div class="setting-pills">
+          <button class="setting-pill" data-legend="small" onclick="selectLegend(this)"><span class="val" style="font-size:12px">A</span><span class="desc">Small</span></button>
+          <button class="setting-pill active" data-legend="medium" onclick="selectLegend(this)"><span class="val" style="font-size:16px">A</span><span class="desc">Medium</span></button>
+          <button class="setting-pill" data-legend="large" onclick="selectLegend(this)"><span class="val" style="font-size:20px">A</span><span class="desc">Large</span></button>
+        </div>
+      </div>
+
+      <!-- Slide theme -->
+      <div class="setting-row">
+        <span class="setting-label">Slide theme</span>
+        <div class="setting-pills">
+          <button class="setting-pill theme-option active" data-bg="#0D0D0D" data-text="#FFFFFF" onclick="selectTheme(this)"><span class="theme-swatch ts-dark"></span><span class="desc">Dark</span></button>
+          <button class="setting-pill theme-option" data-bg="#FFFFFF" data-text="#1A1A1A" onclick="selectTheme(this)"><span class="theme-swatch ts-light"></span><span class="desc">Light</span></button>
+          <button class="setting-pill theme-option" data-bg="#1A1B2E" data-text="#E8E8F0" onclick="selectTheme(this)"><span class="theme-swatch ts-navy"></span><span class="desc">Navy</span></button>
+          <button class="setting-pill theme-option" data-bg="#F5F0EB" data-text="#2C2420" onclick="selectTheme(this)"><span class="theme-swatch ts-warm"></span><span class="desc">Warm</span></button>
+          <button class="setting-pill theme-option" id="customThemeBtn" onclick="toggleThemePicker()"><span class="theme-swatch ts-custom" id="customThemePreview"></span><span class="desc">Custom</span></button>
+        </div>
+        <div class="picker-panel" id="themePickerPanel">
+          <div class="picker-inner">
+            <div class="picker-group">
+              <span class="picker-group-label">Background</span>
+              <div class="picker-group-row">
+                <input type="color" id="bgPicker" value="#0D0D0D" oninput="pickThemeColors()">
+                <input type="text" class="picker-hex" id="bgHexInput" value="#0D0D0D" maxlength="7" oninput="pickThemeHex()">
+              </div>
+            </div>
+            <div class="picker-group">
+              <span class="picker-group-label">Text</span>
+              <div class="picker-group-row">
+                <input type="color" id="textPicker" value="#FFFFFF" oninput="pickThemeColors()">
+                <input type="text" class="picker-hex" id="textHexInput" value="#FFFFFF" maxlength="7" oninput="pickThemeHex()">
+              </div>
+            </div>
+            <div class="picker-preview" id="themeMiniPreview"><span class="pp-text">Aa</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accent color -->
+      <div class="setting-row">
+        <span class="setting-label">Accent color</span>
+        <div class="setting-pills" id="colorOptions">
+          <button class="setting-pill color-option active" data-color="#D97757" onclick="selectColor(this)"><span class="color-swatch" style="background:#D97757"></span><span class="desc">Terra Cotta</span></button>
+          <button class="setting-pill color-option" data-color="#E05C8A" onclick="selectColor(this)"><span class="color-swatch" style="background:#E05C8A"></span><span class="desc">Pink</span></button>
+          <button class="setting-pill color-option" data-color="#7C5CFC" onclick="selectColor(this)"><span class="color-swatch" style="background:#7C5CFC"></span><span class="desc">Purple</span></button>
+          <button class="setting-pill color-option" data-color="#3B9EFF" onclick="selectColor(this)"><span class="color-swatch" style="background:#3B9EFF"></span><span class="desc">Blue</span></button>
+          <button class="setting-pill color-option" data-color="#2ECC71" onclick="selectColor(this)"><span class="color-swatch" style="background:#2ECC71"></span><span class="desc">Green</span></button>
+          <button class="setting-pill color-option" data-color="#F1C40F" onclick="selectColor(this)"><span class="color-swatch" style="background:#F1C40F"></span><span class="desc">Gold</span></button>
+          <button class="setting-pill color-option" id="customColorBtn" onclick="toggleCustomPicker()"><span class="color-swatch" id="customSwatch" style="background:#888"></span><span class="desc">Custom</span></button>
+        </div>
+        <div class="picker-panel" id="customPickerPanel">
+          <div class="picker-inner">
+            <input type="color" id="colorPicker" value="#D97757" oninput="pickCustomColor(this.value)">
+            <div class="picker-group">
+              <span class="picker-group-label">Pick any color</span>
+              <input type="text" class="picker-hex" id="hexInput" value="#D97757" maxlength="7" oninput="pickCustomHex(this.value)">
+            </div>
+            <div class="picker-preview" id="customPreview" style="background:#D97757"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
+// === STATE ===
 let selectedFormat = localStorage.getItem('ac_format') || '4:5';
 let selectedLang = localStorage.getItem('ac_lang') || 'en';
 let selectedSlides = parseInt(localStorage.getItem('ac_slides')) || 7;
 let selectedColor = localStorage.getItem('ac_color') || '#D97757';
 let selectedBg = localStorage.getItem('ac_bg') || '#0D0D0D';
 let selectedText = localStorage.getItem('ac_text') || '#FFFFFF';
+let selectedLegend = localStorage.getItem('ac_legend') || 'medium';
 
-// Restore saved preferences on load
+// === RESTORE ON LOAD ===
 document.addEventListener('DOMContentLoaded', () => {
-  // Restore format
-  document.querySelectorAll('[data-format]').forEach(b => {
-    b.classList.toggle('active', b.dataset.format === selectedFormat);
-  });
-  // Restore language
-  document.querySelectorAll('[data-lang]').forEach(b => {
-    b.classList.toggle('active', b.dataset.lang === selectedLang);
-  });
-  // Restore slides
-  document.querySelectorAll('[data-slides]').forEach(b => {
-    b.classList.toggle('active', b.dataset.slides === String(selectedSlides));
-  });
-  // Restore theme
+  // UI theme
+  const uiTheme = localStorage.getItem('ac_ui_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', uiTheme);
+
+  // Format
+  document.querySelectorAll('[data-format]').forEach(b => b.classList.toggle('active', b.dataset.format === selectedFormat));
+  // Language
+  document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('active', b.dataset.lang === selectedLang));
+  // Slides slider
+  const slidesRange = document.getElementById('slidesRange');
+  if (slidesRange) { slidesRange.value = selectedSlides; updateSlidesSlider(selectedSlides); }
+  // Legend
+  document.querySelectorAll('[data-legend]').forEach(b => b.classList.toggle('active', b.dataset.legend === selectedLegend));
+  // Theme
   const themeMatch = document.querySelector(`.theme-option[data-bg="${selectedBg}"][data-text="${selectedText}"]`);
   document.querySelectorAll('.theme-option').forEach(b => b.classList.remove('active'));
   if (themeMatch) {
@@ -674,10 +1062,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('bgHexInput').value = selectedBg;
     document.getElementById('textHexInput').value = selectedText;
     updateThemeMiniPreview();
-    document.getElementById('themePickerPanel').classList.add('open');
   }
-
-  // Restore color — check if it matches a preset, otherwise activate custom
+  // Color
   const presetMatch = document.querySelector(`[data-color="${selectedColor}"]`);
   document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
   if (presetMatch) {
@@ -688,24 +1074,67 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('colorPicker').value = selectedColor;
     document.getElementById('hexInput').value = selectedColor;
     document.getElementById('customPreview').style.background = selectedColor;
-    document.getElementById('customPickerPanel').classList.add('open');
   }
-  // Apply accent color to UI
   applyAccentColor(selectedColor);
 });
 
+// === UI THEME TOGGLE ===
+function toggleUITheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('ac_ui_theme', next);
+}
+
+// === SETTINGS DRAWER ===
+function toggleSettingsDrawer() {
+  const drawer = document.getElementById('settingsDrawer');
+  const overlay = document.getElementById('settingsOverlay');
+  const isOpen = drawer.classList.contains('open');
+  drawer.classList.toggle('open');
+  overlay.classList.toggle('open');
+  document.body.style.overflow = isOpen ? '' : 'hidden';
+}
+
+// === SELECTORS ===
 function selectFormat(btn) {
-  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedFormat = btn.dataset.format;
   localStorage.setItem('ac_format', selectedFormat);
 }
 
 function selectLang(btn) {
-  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedLang = btn.dataset.lang;
   localStorage.setItem('ac_lang', selectedLang);
+}
+
+function selectSlides(btn) {
+  // Legacy pill selector — kept for compat
+  btn.parentElement.querySelectorAll('.setting-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedSlides = parseInt(btn.dataset.slides);
+  localStorage.setItem('ac_slides', selectedSlides);
+}
+
+function updateSlidesSlider(val) {
+  selectedSlides = parseInt(val);
+  localStorage.setItem('ac_slides', selectedSlides);
+  document.getElementById('slidesValue').textContent = val;
+  // Estimate: ~$0.03 base + ~$0.02 per step slide (capture + annotation + verify)
+  const stepSlides = Math.max(1, selectedSlides - 1); // minus cover
+  const low = (0.03 + stepSlides * 0.015).toFixed(2);
+  const high = (0.03 + stepSlides * 0.025).toFixed(2);
+  document.getElementById('slidesEstimate').textContent = `Estimated cost: ~$${low} – $${high}`;
+}
+
+function selectLegend(btn) {
+  btn.parentElement.querySelectorAll('.setting-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedLegend = btn.dataset.legend;
+  localStorage.setItem('ac_legend', selectedLegend);
 }
 
 function selectTheme(btn) {
@@ -766,23 +1195,15 @@ function pickThemeHex() {
 function updateThemeMiniPreview() {
   const prev = document.getElementById('themeMiniPreview');
   prev.style.background = selectedBg;
-  prev.querySelector('.tmp-text').style.color = selectedText;
-}
-
-function selectSlides(btn) {
-  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  selectedSlides = parseInt(btn.dataset.slides);
-  localStorage.setItem('ac_slides', selectedSlides);
+  prev.querySelector('.pp-text').style.color = selectedText;
 }
 
 function selectColor(btn) {
-  btn.parentElement.querySelectorAll('.format-option').forEach(b => b.classList.remove('active'));
+  btn.parentElement.querySelectorAll('.setting-pill').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedColor = btn.dataset.color;
   localStorage.setItem('ac_color', selectedColor);
   applyAccentColor(selectedColor);
-  // Close custom picker if open
   document.getElementById('customPickerPanel').classList.remove('open');
 }
 
@@ -793,12 +1214,10 @@ function toggleCustomPicker() {
     panel.classList.remove('open');
   } else {
     panel.classList.add('open');
-    // Set picker to current custom color
     document.getElementById('colorPicker').value = selectedColor;
     document.getElementById('hexInput').value = selectedColor;
     document.getElementById('customPreview').style.background = selectedColor;
   }
-  // Activate custom button
   document.querySelectorAll('#colorOptions .color-option').forEach(b => b.classList.remove('active'));
   document.getElementById('customColorBtn').classList.add('active');
 }
@@ -827,11 +1246,11 @@ function pickCustomHex(value) {
 
 function applyAccentColor(color) {
   document.documentElement.style.setProperty('--accent', color);
-  // Compute hover (lighter) and dim (transparent) variants
   document.documentElement.style.setProperty('--accent-hover', color + 'CC');
   document.documentElement.style.setProperty('--accent-dim', color + '1F');
 }
 
+// === GENERATE ===
 async function generate() {
   const url = document.getElementById('urlInput').value.trim();
   if (!url) return;
@@ -840,25 +1259,47 @@ async function generate() {
   const progress = document.getElementById('progressSection');
   const results = document.getElementById('resultsSection');
   const errorMsg = document.getElementById('errorMsg');
-  const log = document.getElementById('progressLog');
   const bar = document.getElementById('progressBar');
 
-  // Reset
   btn.disabled = true;
   btn.textContent = 'Generating...';
   progress.classList.add('visible');
   results.classList.remove('visible');
   errorMsg.classList.remove('visible');
-  log.innerHTML = '';
   bar.style.width = '0%';
 
-  const steps = { scraping: 15, analyzing: 40, searching: 60, capturing: 75, rendering: 90 };
+  // Reset pipeline steps
+  resetPipeline();
+
+  // Start timer
+  const startTime = Date.now();
+  const timerEl = document.getElementById('progressTimer');
+  const timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const min = Math.floor(elapsed / 60);
+    const sec = String(elapsed % 60).padStart(2, '0');
+    timerEl.textContent = `${min}:${sec}`;
+  }, 1000);
+
+  const stepPercent = { scraping: 10, analyzing: 35, searching: 45, capturing: 60, validating: 70, refining: 85, rendering: 95 };
+  const stepAgentName = {
+    scraping: 'Scraper',
+    analyzing: 'AI Agents',
+    searching: 'Image Search',
+    capturing: 'Capture Engine',
+    validating: 'Agent 4 — Validator',
+    refining: 'Agent 5-6 — Annotator',
+    rendering: 'Renderer',
+  };
+
+  let lastStep = null;
+  const stepStartTimes = {};
 
   try {
     const response = await fetch('/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang, max_slides: selectedSlides, accent_color: selectedColor, bg_color: selectedBg, text_color: selectedText }),
+      body: JSON.stringify({ url, format: selectedFormat, language: selectedLang, max_slides: selectedSlides, accent_color: selectedColor, bg_color: selectedBg, text_color: selectedText, legend_size: selectedLegend }),
     });
 
     const reader = response.body.getReader();
@@ -879,34 +1320,103 @@ async function generate() {
           eventType = line.slice(7).trim();
         } else if (line.startsWith('data: ')) {
           const data = JSON.parse(line.slice(6));
-
           if (eventType === 'status') {
-            addLog(data.step, data.message);
-            if (steps[data.step]) {
-              bar.style.width = steps[data.step] + '%';
-            }
+            updatePipeline(data.step, data.message, lastStep, stepStartTimes);
+            if (stepPercent[data.step]) bar.style.width = stepPercent[data.step] + '%';
+            lastStep = data.step;
           } else if (eventType === 'complete') {
+            finishPipeline(lastStep, stepStartTimes);
             bar.style.width = '100%';
+            clearInterval(timerInterval);
+            const total = Math.floor((Date.now() - startTime) / 1000);
+            const min = Math.floor(total / 60);
+            const sec = String(total % 60).padStart(2, '0');
+            // Build usage summary
+            let usageText = `Done in ${min}:${sec}`;
+            if (data.usage) {
+              const tokens = data.usage.total_tokens ? data.usage.total_tokens.toLocaleString() : '?';
+              const cost = data.usage.estimated_cost ? `$${data.usage.estimated_cost.toFixed(3)}` : '';
+              const calls = data.usage.api_calls || '?';
+              usageText += `  ·  ${tokens} tokens  ·  ${calls} API calls  ·  ~${cost}`;
+            }
+            timerEl.textContent = usageText;
+            document.getElementById('heroAgent').textContent = 'Complete!';
+            document.querySelector('.progress-hero .spinner').style.display = 'none';
+            document.getElementById('heroMsg').textContent = data.carousel_title || '';
             showResults(data);
           } else if (eventType === 'error') {
+            clearInterval(timerInterval);
             throw new Error(data.message);
           }
         }
       }
     }
   } catch (err) {
+    clearInterval(timerInterval);
     errorMsg.textContent = err.message;
     errorMsg.classList.add('visible');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Generate Carousel';
+    btn.textContent = 'Generate';
   }
 }
 
-function addLog(step, message) {
-  const log = document.getElementById('progressLog');
-  log.innerHTML += `<div class="log-line"><span class="log-step">${step}</span><span>${message}</span></div>`;
-  log.scrollTop = log.scrollHeight;
+// Pipeline step names for hero display
+const heroNames = {
+  scraping: 'Scraper',
+  analyzing: 'AI Agents 1-3',
+  searching: 'Image Search',
+  capturing: 'Capture Engine',
+  validating: 'Agent 4 — Validator',
+  refining: 'Agent 5-6 — Annotator',
+  rendering: 'Renderer',
+};
+
+function resetPipeline() {
+  document.querySelectorAll('.pipeline-step').forEach(el => {
+    el.className = 'pipeline-step waiting';
+    el.querySelector('[data-status]').textContent = 'waiting';
+  });
+  document.getElementById('heroAgent').textContent = 'Starting...';
+  document.getElementById('heroMsg').textContent = '';
+  document.getElementById('progressTimer').textContent = '0:00';
+  const spinner = document.querySelector('.progress-hero .spinner');
+  if (spinner) spinner.style.display = '';
+}
+
+function updatePipeline(step, message, prevStep, stepStartTimes) {
+  // Mark previous step as done
+  if (prevStep && prevStep !== step) {
+    const prevEl = document.querySelector(`[data-pipeline="${prevStep}"]`);
+    if (prevEl && !prevEl.classList.contains('done')) {
+      prevEl.className = 'pipeline-step done';
+      const elapsed = stepStartTimes[prevStep] ? Math.round((Date.now() - stepStartTimes[prevStep]) / 1000) : 0;
+      prevEl.querySelector('[data-status]').textContent = elapsed + 's';
+    }
+  }
+
+  // Mark current step as active
+  const curEl = document.querySelector(`[data-pipeline="${step}"]`);
+  if (curEl && !curEl.classList.contains('done')) {
+    curEl.className = 'pipeline-step active';
+    curEl.querySelector('[data-status]').textContent = 'working...';
+    if (!stepStartTimes[step]) stepStartTimes[step] = Date.now();
+  }
+
+  // Update hero
+  document.getElementById('heroAgent').textContent = heroNames[step] || step;
+  document.getElementById('heroMsg').textContent = message;
+}
+
+function finishPipeline(lastStep, stepStartTimes) {
+  document.querySelectorAll('.pipeline-step').forEach(el => {
+    const key = el.dataset.pipeline;
+    if (!el.classList.contains('done')) {
+      el.className = 'pipeline-step done';
+      const elapsed = stepStartTimes[key] ? Math.round((Date.now() - stepStartTimes[key]) / 1000) : 0;
+      el.querySelector('[data-status]').textContent = elapsed > 0 ? elapsed + 's' : '';
+    }
+  });
 }
 
 function showResults(data) {
@@ -932,12 +1442,35 @@ function showResults(data) {
   }
 
   results.classList.add('visible');
+  results.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// Enter to submit
-document.getElementById('urlInput').addEventListener('keydown', (e) => {
+// Enter key to generate
+document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') generate();
 });
+
+// Health check — auto-refresh every 30s
+async function checkHealth() {
+  try {
+    const res = await fetch('/health', { timeout: 5000 });
+    const data = await res.json();
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    if (data.status === 'ok') {
+      dot.className = 'status-dot online';
+      text.textContent = 'Online';
+    } else {
+      dot.className = 'status-dot offline';
+      text.textContent = 'Error';
+    }
+  } catch {
+    document.getElementById('statusDot').className = 'status-dot offline';
+    document.getElementById('statusText').textContent = 'Offline';
+  }
+}
+checkHealth();
+setInterval(checkHealth, 30000);
 </script>
 
 </body>

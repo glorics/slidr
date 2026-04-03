@@ -1,7 +1,7 @@
 {
-  "name": "autocarousel",
-  "version": "0.1.0",
-  "description": "AutoCarousel - URL to Annotated Tutorial Images",
+  "name": "slidr",
+  "version": "1.0.0",
+  "description": "Slidr - URL to annotated tutorial carousel slides",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

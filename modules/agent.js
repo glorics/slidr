@@ -2,6 +2,44 @@ const axios = require('axios');
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 
+// Token usage tracking — accumulated per pipeline run
+let _tokenUsage = { input_tokens: 0, output_tokens: 0, api_calls: 0 };
+
+function resetTokenUsage() {
+  _tokenUsage = { input_tokens: 0, output_tokens: 0, api_calls: 0 };
+}
+
+function getTokenUsage() {
+  const cost = (_tokenUsage.input_tokens / 1_000_000) * 3 + (_tokenUsage.output_tokens / 1_000_000) * 15;
+  return { ..._tokenUsage, total_tokens: _tokenUsage.input_tokens + _tokenUsage.output_tokens, estimated_cost: Math.round(cost * 1000) / 1000 };
+}
+
+function trackUsage(apiResponse) {
+  if (apiResponse && apiResponse.usage) {
+    _tokenUsage.input_tokens += apiResponse.usage.input_tokens || 0;
+    _tokenUsage.output_tokens += apiResponse.usage.output_tokens || 0;
+    _tokenUsage.api_calls += 1;
+  }
+}
+
+// Wrapper for all Claude API calls — tracks tokens automatically
+async function callClaude(body, options = {}) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey || apiKey === 'sk-ant-...') {
+    throw new Error('ANTHROPIC_API_KEY not configured. Set it in .env');
+  }
+  const { data } = await axios.post(ANTHROPIC_API_URL, body, {
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    timeout: options.timeout || 30000,
+  });
+  trackUsage(data);
+  return data;
+}
+
 /**
  * Build the system prompt in the requested language.
  */
@@ -219,25 +257,13 @@ async function analyzeAndStructure(scrapedContent, maxSlides = 7, language = 'en
     return generateMockSlides(scrapedContent, maxSlides);
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
-    throw new Error('ANTHROPIC_API_KEY not configured. Set it in .env');
-  }
-
   const userMessage = buildUserMessage(scrapedContent, maxSlides, language);
 
-  const { data } = await axios.post(ANTHROPIC_API_URL, {
+  const data = await callClaude({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 4096,
     system: getSystemPrompt(language),
     messages: [{ role: 'user', content: userMessage }],
-  }, {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    timeout: 30000,
   });
 
   const text = data.content[0].text;
@@ -404,9 +430,6 @@ async function refineAnnotationsWithVision(screenshotBuffer, annotations) {
   if (!annotations || annotations.length === 0) return [];
   if (process.env.MOCK_AGENT === 'true') return annotations;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') return annotations;
-
   const annotationDescriptions = annotations.map((a, i) =>
     `${i + 1}. [${a.type}] label="${a.label || ''}" — ${a.target_description}`
   ).join('\n');
@@ -438,26 +461,16 @@ Example:
 
   try {
     const base64 = screenshotBuffer.toString('base64');
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,
       messages: [{
         role: 'user',
         content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: 'image/png', data: base64 },
-          },
+          { type: 'image', source: { type: 'base64', media_type: 'image/png', data: base64 } },
           { type: 'text', text: visionPrompt },
         ],
       }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 30000,
     });
 
     const text = data.content[0].text;
@@ -518,14 +531,6 @@ async function analyzeScreenshotAndAnnotate(screenshotBuffer, slideContext, lang
     };
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
-    return {
-      instructions: slideContext.original_instructions || [],
-      annotations: [],
-    };
-  }
-
   const langNames = { en: 'English', fr: 'French', es: 'Spanish', de: 'German' };
   const langName = langNames[language] || 'English';
 
@@ -538,39 +543,47 @@ async function analyzeScreenshotAndAnnotate(screenshotBuffer, slideContext, lang
 
   const instructionCount = avoidInstructions.length > 6 ? '2-3' : '3';
 
-  const visionPrompt = `You are annotating a screenshot for a tutorial carousel slide. Look at the screenshot carefully.
+  // Build page description context
+  const pageDescBlock = slideContext.page_description
+    ? `\nPAGE DESCRIPTION (from validation): ${slideContext.page_description}\n`
+    : '';
+
+  const visionPrompt = `You are the INSTRUCTION WRITER and ANNOTATOR for a tutorial carousel slide. Look at the screenshot carefully. Your instructions are the FINAL text shown to the user.
 
 SLIDE CONTEXT:
-- Slide #${slideContext.slide_number}, title: "${slideContext.title}"
-- Topic: "${slideContext.step_topic || slideContext.title}"
-${avoidBlock}
-YOUR JOB: Create ${instructionCount} instructions + matching circle annotations.
+- Slide #${slideContext.slide_number}
+- Original title: "${slideContext.title}"
+- Topic intent: "${slideContext.step_topic || slideContext.title}"
+${pageDescBlock}${avoidBlock}
+YOUR JOB:
+1. LOOK at the screenshot. Understand what this page actually shows.
+2. CHECK: does the page match the original title "${slideContext.title}"?
+   - If NO: suggest a better title (max 6 words, action-oriented)
+3. Find ${instructionCount} DIFFERENT interactive elements on the screenshot
+4. Write ${instructionCount} instructions in ${langName} based on what you ACTUALLY SEE
+5. Place circle annotations on each element
 
-STEP 1 — Find ${instructionCount} DIFFERENT interactive elements on the screenshot:
-Look for buttons, input fields, links, menu items, toggles, tabs. Pick ${instructionCount} that are SPREAD ACROSS the screenshot (not clustered together). Prefer elements that are relevant to the slide topic.
+ELEMENT SELECTION:
+- Pick elements SPREAD ACROSS the screenshot (not clustered together)
+- Prefer: CTA buttons, input fields, navigation links, feature toggles
+- Avoid: footer links, social media icons, cookie buttons
 
-STEP 2 — Write ${instructionCount} instructions in ${langName}, one per element:
-Format: "→ [Action] the **[element name]** [context]"
-Example: "→ Click the **Sign up free** button to create your account"
+INSTRUCTION FORMAT: "→ [Action] the **[element name]** [context]"
 
-STEP 3 — Place one circle_number annotation on EACH of the ${instructionCount} elements:
-- Circle "1" goes on the element mentioned in instruction 1
-- Circle "2" goes on the element mentioned in instruction 2
-- Circle "3" goes on the element mentioned in instruction 3 (if 3 instructions)
-
-COORDINATE RULES (CRITICAL):
+COORDINATE RULES:
 - All values are PERCENTAGES of the image (0 to 100). NOT pixels!
 - x_percent: 0 = left edge, 50 = center, 100 = right edge
 - y_percent: 0 = top edge, 50 = middle, 100 = bottom edge
-- Place the circle at the CENTER of the target element
-- Keep coordinates between 5 and 95 to stay within visible bounds
-- Minimum distance between any two circles: 15% on at least one axis
+- Place circle at the CENTER of the target element
+- Keep coordinates between 5 and 95
+- Minimum distance between circles: 15% on at least one axis
 
-ALSO: Add ONE highlight_box around the most important element (the primary action button or input field).
+ALSO: Add ONE highlight_box around the most important element.
 
 RETURN ONLY this exact JSON structure:
 {
   "page_description": "What this page shows",
+  "adapted_title": "Better Title Here",
   "instructions": [
     "→ Click the **Sign up free** button to create your account",
     "→ Navigate to **Pricing** to see available plans",
@@ -582,11 +595,12 @@ RETURN ONLY this exact JSON structure:
     { "type": "circle_number", "label": "3", "target_description": "Solutions dropdown", "x_percent": 8, "y_percent": 5 },
     { "type": "highlight_box", "label": "", "target_description": "Sign up free button", "x_percent": 35, "y_percent": 52, "width_percent": 15, "height_percent": 5 }
   ]
-}`;
+}
+- adapted_title: only include if the original title doesn't match the page. Omit if fine.`;
 
   try {
     const base64 = screenshotBuffer.toString('base64');
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
       messages: [{
@@ -599,14 +613,7 @@ RETURN ONLY this exact JSON structure:
           { type: 'text', text: visionPrompt },
         ],
       }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 45000,
-    });
+    }, { timeout: 45000 });
 
     const text = data.content[0].text;
     const result = parseAgentResponse(text);
@@ -657,12 +664,14 @@ RETURN ONLY this exact JSON structure:
       page_description: result.page_description || '',
       instructions: result.instructions || slideContext.original_instructions || [],
       annotations,
+      adapted_title: result.adapted_title || null,
     };
   } catch (err) {
     console.log(`Screenshot analysis failed: ${err.message}`);
     return {
       instructions: slideContext.original_instructions || [],
       annotations: [],
+      adapted_title: null,
     };
   }
 }
@@ -677,11 +686,6 @@ RETURN ONLY this exact JSON structure:
 async function validateScreenshot(screenshotBuffer) {
   if (process.env.MOCK_AGENT === 'true') {
     return { valid: true, reason: 'mock mode', page_type: 'unknown', ui_elements: [] };
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
-    return { valid: true, reason: 'no API key', page_type: 'unknown', ui_elements: [] };
   }
 
   const prompt = `You are evaluating a screenshot of a web page for use in a tutorial carousel.
@@ -708,7 +712,7 @@ Rules:
 
   try {
     const base64 = screenshotBuffer.toString('base64');
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
       messages: [{
@@ -718,14 +722,7 @@ Rules:
           { type: 'text', text: prompt },
         ],
       }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 20000,
-    });
+    }, { timeout: 20000 });
 
     const text = data.content[0].text;
     return parseAgentResponse(text);
@@ -746,17 +743,12 @@ Rules:
  * @param {object} viewport - { width, height } of the capture viewport
  * @returns {Promise<object>} { instructions, annotations }
  */
-async function selectAnnotationTargets(elements, slideContext, language = 'en', viewport = { width: 1080, height: 1080 }) {
+async function selectAnnotationTargets(elements, slideContext, language = 'en', viewport = { width: 1080, height: 900 }) {
   if (!elements || elements.length === 0) {
     return { instructions: slideContext.original_instructions || [], annotations: [] };
   }
 
   if (process.env.MOCK_AGENT === 'true') {
-    return { instructions: slideContext.original_instructions || [], annotations: [] };
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
     return { instructions: slideContext.original_instructions || [], annotations: [] };
   }
 
@@ -809,18 +801,11 @@ RETURN ONLY valid JSON:
 target_indices must be the [index] numbers from the element list above.`;
 
   try {
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [{ role: 'user', content: prompt }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 30000,
-    });
+    }, { timeout: 30000 });
 
     const text = data.content[0].text;
     const result = parseAgentResponse(text);
@@ -895,11 +880,6 @@ async function planStrategy(scrapedContent, maxSlides = 7, language = 'en') {
     return generateMockStrategy(scrapedContent, maxSlides);
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
-    throw new Error('ANTHROPIC_API_KEY not configured. Set it in .env');
-  }
-
   const langNames = { en: 'English', fr: 'French', es: 'Spanish', de: 'German' };
   const langName = langNames[language] || 'English';
 
@@ -915,12 +895,16 @@ async function planStrategy(scrapedContent, maxSlides = 7, language = 'en') {
     markdown = markdown.substring(0, 6000) + '\n[...truncated...]';
   }
 
+  const isYouTube = scrapedContent.type === 'youtube';
+
   const systemPrompt = `You are a carousel strategist. You plan the STRUCTURE of tutorial carousels for social media.
 You do NOT write the slide text — another agent does that. You only decide:
-- How many slides (max ${maxSlides - 2} step slides + 1 cover + optionally 1 resource = max ${maxSlides} total)
+- How many slides (max ${maxSlides - 2} step slides + 1 cover${isYouTube ? ' + 1 resource' : ''} = max ${maxSlides} total)
 - What TOPIC each slide covers
 - What URL to screenshot for each slide
 - The logical flow from slide to slide
+
+RESOURCE SLIDE RULE: Only include a "resource" type slide if the source content is a YouTube video. For non-YouTube URLs, do NOT create resource slides — end with step slides instead.
 
 CRITICAL APPROACH — URL-DRIVEN PLANNING:
 1. FIRST scan the AVAILABLE PAGES list to see what specific subpages exist
@@ -967,19 +951,12 @@ Return ONLY valid JSON:
   ]
 }`;
 
-  const { data } = await axios.post(ANTHROPIC_API_URL, {
+  const data = await callClaude({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 2048,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
-  }, {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    timeout: 30000,
-  });
+  }, { timeout: 30000 });
 
   const text = data.content[0].text;
   return parseAgentResponse(text);
@@ -1002,11 +979,6 @@ async function writeSlideContent(strategy, scrapedContent, language = 'en') {
     return generateMockSlides(scrapedContent, strategy.slides.length);
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
-    throw new Error('ANTHROPIC_API_KEY not configured. Set it in .env');
-  }
-
   const langNames = { en: 'English', fr: 'French', es: 'Spanish', de: 'German' };
   const langName = langNames[language] || 'English';
 
@@ -1016,16 +988,18 @@ async function writeSlideContent(strategy, scrapedContent, language = 'en') {
     markdown = markdown.substring(0, 6000) + '\n[...truncated...]';
   }
 
-  const systemPrompt = `You are a carousel copywriter. You write punchy, actionable slide content for tutorial carousels.
+  const systemPrompt = `You are a carousel copywriter. You write punchy slide titles and descriptions for tutorial carousels.
 ALL text MUST be in ${langName}.
-You receive a STRATEGY (slide plan) and write the actual titles, instructions, and descriptions.
+You receive a STRATEGY (slide plan) and write the titles and descriptions.
+
+IMPORTANT: You do NOT write step instructions or annotations. Those will be generated later by another agent that can SEE the actual screenshots. You only write:
+- Cover: title + subtitle
+- Step: title + image_searches (for logos)
+- Resource (only if present in strategy): title + description. Only include resource slides if the strategy has them (YouTube content only).
 
 WRITING STYLE:
 - Titles: max 6 words, impactful, action-oriented
-- Instructions: use arrows and **bold keywords** (syntax: **word**)
-- Each instruction describes a VISIBLE UI action (click, type, select, navigate)
-- Maximum 3 instructions per step slide
-- Instructions must be DIFFERENT across slides — never repeat the same action`;
+- Descriptions: use **bold keywords** for emphasis`;
 
   const strategyJson = JSON.stringify(strategy, null, 2);
 
@@ -1038,6 +1012,7 @@ SOURCE CONTENT:
 ${markdown}
 
 For each slide in the strategy, write the appropriate content.
+Do NOT write instructions or annotations for step slides — another agent handles that after seeing the screenshots.
 
 Return ONLY valid JSON:
 {
@@ -1054,17 +1029,9 @@ Return ONLY valid JSON:
       "slide_number": 1,
       "type": "step",
       "title": "Short step title",
-      "instructions": [
-        "→ Click the **Sign Up** button at the top",
-        "→ Enter your **email address** in the field",
-        "→ Choose your **plan** from the options"
-      ],
       "screenshot_url": "https://...",
       "image_searches": [
         { "type": "logo", "query": "Tool logo", "entity": "domain.com", "purpose": "Logo in slide corner" }
-      ],
-      "annotations": [
-        { "type": "circle_number", "label": "1", "target_description": "Sign Up button", "position_hint": "top-right" }
       ]
     },
     {
@@ -1079,22 +1046,14 @@ Return ONLY valid JSON:
 IMPORTANT:
 - Copy screenshot_url from the strategy for each step slide
 - Create 1 image_search of type "logo" for each step slide (the tool's logo)
-- Create 1 annotation of type "circle_number" per instruction, with a target_description of what the annotation points to
-- Annotations position_hint can be: top-left, top-center, top-right, center-left, center, center-right, bottom-left, bottom-center, bottom-right`;
+- Do NOT include "instructions" or "annotations" for step slides`;
 
-  const { data } = await axios.post(ANTHROPIC_API_URL, {
+  const data = await callClaude({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 4096,
     system: systemPrompt,
     messages: [{ role: 'user', content: userMessage }],
-  }, {
-    headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    timeout: 30000,
-  });
+  }, { timeout: 30000 });
 
   const text = data.content[0].text;
   return parseAgentResponse(text);
@@ -1121,11 +1080,6 @@ async function exploreUrls(slideDefinitions, scrapedContent, language = 'en') {
   }
 
   if (process.env.MOCK_AGENT === 'true') {
-    return slideDefinitions;
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
     return slideDefinitions;
   }
 
@@ -1170,18 +1124,11 @@ If a URL is fine, don't include it in the array. Only include corrections.
 If ALL URLs are fine, return an empty array: []`;
 
   try {
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2048,
       messages: [{ role: 'user', content: prompt }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 20000,
-    });
+    }, { timeout: 20000 });
 
     const text = data.content[0].text;
     const corrections = parseAgentResponse(text);
@@ -1248,18 +1195,13 @@ function generateMockStrategy(content, maxSlides) {
  * @param {object} viewport - { width, height } of the capture viewport (default 1080x1080)
  * @returns {Promise<object>} { instructions, annotations }
  */
-async function selectAnnotationTargetsWithVision(screenshotBuffer, elements, slideContext, language = 'en', viewport = { width: 1080, height: 1080 }) {
+async function selectAnnotationTargetsWithVision(screenshotBuffer, elements, slideContext, language = 'en', viewport = { width: 1080, height: 900 }) {
   // No DOM elements → pure Vision fallback
   if (!elements || elements.length === 0) {
     return analyzeScreenshotAndAnnotate(screenshotBuffer, slideContext, language);
   }
 
   if (process.env.MOCK_AGENT === 'true') {
-    return { instructions: slideContext.original_instructions || [], annotations: [] };
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
     return { instructions: slideContext.original_instructions || [], annotations: [] };
   }
 
@@ -1287,33 +1229,44 @@ async function selectAnnotationTargetsWithVision(screenshotBuffer, elements, sli
     feedbackBlock = `\nPREVIOUS ATTEMPT WAS REJECTED by quality inspector. Issues:\n${rejectionFeedback}\nYou MUST pick DIFFERENT elements that fix ALL issues above. Spread circles further apart.\n`;
   }
 
-  const prompt = `You are annotating a screenshot for a tutorial carousel. You can SEE the screenshot AND you have the exact DOM element positions from the page.
+  // Build page description context from Agent 4 validation
+  const pageDescBlock = slideContext.page_description
+    ? `\nPAGE DESCRIPTION (from validation): ${slideContext.page_description}\n`
+    : '';
+
+  const prompt = `You are the INSTRUCTION WRITER and ANNOTATOR for a tutorial carousel. You can SEE the screenshot AND you have exact DOM element positions. Your instructions are the FINAL text shown to the user — write them based on what you ACTUALLY SEE.
 
 SLIDE CONTEXT:
-- Slide #${slideContext.slide_number}, title: "${slideContext.title}"
-- Topic: "${slideContext.step_topic || slideContext.title}"
-${avoidBlock}${feedbackBlock}
+- Slide #${slideContext.slide_number}
+- Original title: "${slideContext.title}"
+- Topic intent: "${slideContext.step_topic || slideContext.title}"
+${pageDescBlock}${avoidBlock}${feedbackBlock}
 INTERACTIVE DOM ELEMENTS visible on this page (with exact pixel positions):
 ${elementList}
 
 YOUR JOB:
-1. LOOK at the screenshot to understand the page layout
-2. Pick exactly ${instructionCount} elements from the list above that are:
+1. LOOK at the screenshot carefully. Understand what this page actually shows.
+2. CHECK: does the page content match the original title "${slideContext.title}"?
+   - If YES: keep the title as-is
+   - If NO: suggest a better title that matches what the page actually shows (max 6 words, action-oriented)
+3. Pick exactly ${instructionCount} elements from the DOM list that are:
    - VISIBLE on the screenshot (you can actually see them)
-   - Relevant to the slide topic "${slideContext.step_topic || slideContext.title}"
-   - Spread across DIFFERENT areas of the page (not clustered)
+   - RELEVANT to what the page actually shows (not the original topic if it doesn't match)
+   - SPREAD across DIFFERENT areas of the page (not clustered together)
    - Interactive and meaningful (buttons, links, inputs, menus)
-3. Write ${instructionCount} clear instructions in ${langName}
-4. Pick ONE element for a highlight box (the primary action)
+4. Write ${instructionCount} clear instructions in ${langName} that describe what the user should do with each element
+5. Pick ONE element for a highlight box (the primary action)
 
 RULES:
-- ONLY pick elements you can ACTUALLY SEE on the screenshot
-- Prefer: CTA buttons, navigation links, key input fields, feature toggles
+- ONLY pick elements you can ACTUALLY SEE on the screenshot — never guess
+- Prefer: CTA buttons, key navigation links, input fields, feature toggles
 - Avoid: footer links, social media icons, cookie buttons, tiny decorative elements
 - Instructions format: "→ [Action] the **[exact element name]** [brief context]"
+- Minimum distance between any two picked elements: they must be in DIFFERENT visual areas
 
 RETURN ONLY valid JSON:
 {
+  "adapted_title": "Better Title Here",
   "instructions": [
     "→ Click the **Sign up free** button to create your account",
     "→ Enter your email in the **Work email** field",
@@ -1323,12 +1276,13 @@ RETURN ONLY valid JSON:
   "highlight_index": 5
 }
 
-target_indices: the [index] numbers from the element list above.
-highlight_index: index of the most important element (gets a highlight box).`;
+- adapted_title: only include if you changed the title. Omit if the original title is fine.
+- target_indices: the [index] numbers from the element list above.
+- highlight_index: index of the most important element (gets a highlight box).`;
 
   try {
     const base64 = screenshotBuffer.toString('base64');
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [{
@@ -1338,14 +1292,7 @@ highlight_index: index of the most important element (gets a highlight box).`;
           { type: 'text', text: prompt },
         ],
       }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 45000,
-    });
+    }, { timeout: 45000 });
 
     const text = data.content[0].text;
     const result = parseAgentResponse(text);
@@ -1397,6 +1344,7 @@ highlight_index: index of the most important element (gets a highlight box).`;
     return {
       instructions: result.instructions || slideContext.original_instructions || [],
       annotations,
+      adapted_title: result.adapted_title || null,
     };
   } catch (err) {
     console.log(`Vision+DOM failed: ${err.message}, falling back to DOM-only`);
@@ -1423,11 +1371,6 @@ highlight_index: index of the most important element (gets a highlight box).`;
 async function verifyAnnotatedSlide(annotatedScreenshotBuffer, slideData) {
   if (process.env.MOCK_AGENT === 'true') {
     return { passed: true, score: 10, issues: [] };
-  }
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || apiKey === 'sk-ant-...') {
-    return { passed: true, score: 0, issues: [], error: 'no API key' };
   }
 
   const instructions = slideData.instructions || [];
@@ -1508,7 +1451,7 @@ Be STRICT. Only mark as passed if the slide is genuinely production-ready.`;
 
   try {
     const base64 = annotatedScreenshotBuffer.toString('base64');
-    const { data } = await axios.post(ANTHROPIC_API_URL, {
+    const data = await callClaude({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       messages: [{
@@ -1518,14 +1461,7 @@ Be STRICT. Only mark as passed if the slide is genuinely production-ready.`;
           { type: 'text', text: prompt },
         ],
       }],
-    }, {
-      headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'content-type': 'application/json',
-      },
-      timeout: 30000,
-    });
+    }, { timeout: 30000 });
 
     const text = data.content[0].text;
     return parseAgentResponse(text);
@@ -1550,4 +1486,7 @@ module.exports = {
   selectAnnotationTargets,
   selectAnnotationTargetsWithVision,
   verifyAnnotatedSlide,
+  // Token tracking
+  resetTokenUsage,
+  getTokenUsage,
 };

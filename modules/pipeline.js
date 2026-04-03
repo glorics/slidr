@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
 const { scrape } = require('./scraper');
-const { planStrategy, writeSlideContent, exploreUrls, analyzeScreenshotAndAnnotate, validateScreenshot, selectAnnotationTargets, selectAnnotationTargetsWithVision, verifyAnnotatedSlide } = require('./agent');
+const { planStrategy, writeSlideContent, exploreUrls, analyzeScreenshotAndAnnotate, validateScreenshot, selectAnnotationTargets, selectAnnotationTargetsWithVision, verifyAnnotatedSlide, resetTokenUsage, getTokenUsage } = require('./agent');
 const { searchImages, processScreenshot, fetchLogo } = require('./image-search');
 const { captureAll, captureAllWithElements } = require('./capture');
 const { renderTemplate, FORMATS } = require('./renderer');
@@ -23,8 +23,12 @@ async function generateCarousel(url, options = {}) {
     accentColor = '#D97757',
     bgColor = '#0D0D0D',
     textColor = '#FFFFFF',
+    legendSize = 'medium',
     onStatus = () => {},
   } = options;
+
+  // Reset token tracking for this run
+  resetTokenUsage();
 
   const jobId = `job_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const outputDir = path.join(process.env.OUTPUT_DIR || './outputs', jobId);
@@ -132,6 +136,7 @@ async function generateCarousel(url, options = {}) {
     }
 
     // Step 4b: Validate screenshots — reject 404s, login walls, blank pages
+    // Also stores page_description for use by Agent 5
     onStatus({ step: 'validating', message: 'Validating screenshots...' });
     for (const slide of slideDefinitions.slides) {
       if (slide._screenshotPath && slide.type === 'step') {
@@ -142,9 +147,11 @@ async function generateCarousel(url, options = {}) {
 
           if (!validation.valid) {
             console.log(`Screenshot REJECTED for slide ${slide.slide_number}: ${validation.reason} (${validation.page_type})`);
-            // Remove the invalid screenshot — slide will render without it
             delete slide._screenshotPath;
           } else {
+            // Store page_description for Agent 5 context
+            slide._pageDescription = validation.reason || '';
+            slide._pageType = validation.page_type || '';
             console.log(`Screenshot VALID for slide ${slide.slide_number}: ${validation.page_type} (score: ${validation.quality_score || '?'}, elements: ${(validation.ui_elements || []).length})`);
           }
         } catch (err) {
@@ -155,29 +162,29 @@ async function generateCarousel(url, options = {}) {
     const validScreenshots = slideDefinitions.slides.filter(s => s._screenshotPath && s.type === 'step').length;
     onStatus({ step: 'validating', message: `${validScreenshots} valid screenshots out of ${slidesWithScreenshots.length} captured` });
 
-    // Step 4c: Vision+DOM hybrid annotation — pixel-perfect placement
-    // Pass 1 (DOM): exact element positions from getBoundingClientRect
-    // Pass 2 (Vision): Claude sees the screenshot + DOM positions, picks best elements
-    // Result: Vision intelligence + DOM precision = 100% accurate coordinates
-    onStatus({ step: 'refining', message: 'Analyzing screenshots and placing annotations...' });
+    // Step 4c: Screenshot-first instruction writing + annotation placement
+    // Agent 5 is now the SOLE instruction writer — it sees the actual screenshot
+    // and writes instructions based on what's REALLY visible on the page.
+    // It can also adapt the slide title if the page doesn't match the original topic.
+    onStatus({ step: 'refining', message: 'Writing instructions and placing annotations based on screenshots...' });
     const usedInstructions = [];
     for (const slide of slideDefinitions.slides) {
       if (slide._screenshotPath && slide.type === 'step') {
         const slideContext = {
           title: slide.title,
           slide_number: slide.slide_number,
-          original_instructions: slide.instructions,
+          original_instructions: slide.instructions || [],
           step_topic: slide.title,
           avoid_instructions: usedInstructions,
+          page_description: slide._pageDescription || '',
         };
 
         const elements = elementsMap.get(slide.slide_number) || [];
         const screenshotBuffer = fs.readFileSync(slide._screenshotPath);
 
         if (elements.length >= 3) {
-          // Vision+DOM hybrid: Claude sees the image AND knows exact element positions
           try {
-            console.log(`[VISION+DOM] Slide ${slide.slide_number}: ${elements.length} elements + screenshot → hybrid annotation`);
+            console.log(`[VISION+DOM] Slide ${slide.slide_number}: ${elements.length} elements + screenshot → writing instructions + annotations`);
             const result = await selectAnnotationTargetsWithVision(screenshotBuffer, elements, slideContext, language);
 
             if (result.instructions && result.instructions.length > 0) {
@@ -187,14 +194,18 @@ async function generateCarousel(url, options = {}) {
             if (result.annotations && result.annotations.length > 0) {
               slide.annotations = result.annotations;
             }
+            // Apply title adaptation if Agent 5 suggested one
+            if (result.adapted_title) {
+              console.log(`[TITLE ADAPT] Slide ${slide.slide_number}: "${slide.title}" → "${result.adapted_title}"`);
+              slide.title = result.adapted_title;
+            }
 
-            console.log(`[VISION+DOM] Slide ${slide.slide_number}: ${(result.annotations || []).length} annotations placed with DOM precision`);
+            console.log(`[VISION+DOM] Slide ${slide.slide_number}: ${(result.annotations || []).length} annotations, ${(result.instructions || []).length} instructions`);
           } catch (err) {
             console.log(`Vision+DOM failed for slide ${slide.slide_number}: ${err.message}, falling back to Vision-only`);
             await visionFallback(slide, slideContext, usedInstructions, language);
           }
         } else {
-          // Vision-only fallback: insufficient DOM elements
           console.log(`[VISION] Slide ${slide.slide_number}: only ${elements.length} DOM elements, using Vision-only`);
           await visionFallback(slide, slideContext, usedInstructions, language);
         }
@@ -203,9 +214,15 @@ async function generateCarousel(url, options = {}) {
 
     // Post-processing dedup safety net: remove instructions that appear on multiple slides
     // Also removes orphaned annotations and renumbers remaining ones
+    // Fingerprint = bold keyword + next few words for context, so "Get started for free" ≠ "Get started with design"
     const instructionFingerprint = (inst) => {
       const boldMatch = inst.match(/\*\*(.+?)\*\*/);
-      return boldMatch ? boldMatch[1].toLowerCase().trim() : inst.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 30);
+      if (!boldMatch) return inst.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 40);
+      const boldText = boldMatch[1].toLowerCase().trim();
+      // Grab up to 4 words after the bold keyword for context
+      const afterBold = inst.substring(inst.indexOf(boldMatch[0]) + boldMatch[0].length);
+      const contextWords = afterBold.replace(/[^a-z0-9\s]/gi, '').trim().split(/\s+/).slice(0, 4).join(' ').toLowerCase();
+      return `${boldText} ${contextWords}`.trim();
     };
     const seenFingerprints = new Set();
     for (const slide of slideDefinitions.slides) {
@@ -262,7 +279,8 @@ async function generateCarousel(url, options = {}) {
       }
     }
 
-    // Step 4e: Quality verification loop — Agent 6 checks EVERYTHING, retries if needed
+    // Step 4e: Quality verification — Agent 6 checks the final annotated slides
+    // Smart retry: only retry if score is 5-6 (fixable). Score < 5 = fundamental mismatch, don't waste API calls.
     onStatus({ step: 'refining', message: 'Quality verification of annotated slides...' });
     for (const slide of slideDefinitions.slides) {
       if (!slide._originalScreenshotPath || slide.type !== 'step') continue;
@@ -270,11 +288,10 @@ async function generateCarousel(url, options = {}) {
       const validAnnotations = (slide.annotations || []).filter(a => !a._notFound);
       if (validAnnotations.length === 0) continue;
 
-      const maxRetries = 2;
+      const maxRetries = 1; // Reduced from 2 — with screenshot-first flow, first attempt should be good
       let passed = false;
 
       for (let attempt = 0; attempt <= maxRetries && !passed; attempt++) {
-        // Verify the current annotated image
         const annotatedBuffer = fs.readFileSync(slide._screenshotPath);
         const verdict = await verifyAnnotatedSlide(annotatedBuffer, {
           title: slide.title,
@@ -289,24 +306,29 @@ async function generateCarousel(url, options = {}) {
           break;
         }
 
-        if (attempt >= maxRetries) {
-          console.log(`[VERIFY] Slide ${slide.slide_number}: max retries reached (score: ${verdict.score || '?'}), keeping current version`);
+        const score = verdict.score || 0;
+        const issues = (verdict.issues || []).map(i => i.detail || JSON.stringify(i)).join('. ');
+
+        // Score < 5 = fundamental mismatch (page doesn't match topic) — don't retry, it won't help
+        if (score < 5) {
+          console.log(`[VERIFY] Slide ${slide.slide_number}: LOW SCORE ${score} — fundamental mismatch, skipping retry. Issues: ${issues}`);
           break;
         }
 
-        // Build feedback from issues
-        const issues = (verdict.issues || []).map(i => i.detail || JSON.stringify(i)).join('. ');
-        const feedback = verdict.suggestions ? `${verdict.suggestions}. Issues: ${issues}` : issues;
-        console.log(`[VERIFY] Slide ${slide.slide_number}: FAILED (score: ${verdict.score || '?'}, attempt ${attempt + 1}/${maxRetries + 1}): ${issues}`);
+        if (attempt >= maxRetries) {
+          console.log(`[VERIFY] Slide ${slide.slide_number}: max retries reached (score: ${score}), keeping current version`);
+          break;
+        }
 
-        // Check if retry is possible (need DOM elements)
+        const feedback = verdict.suggestions ? `${verdict.suggestions}. Issues: ${issues}` : issues;
+        console.log(`[VERIFY] Slide ${slide.slide_number}: FAILED (score: ${score}, attempt ${attempt + 1}/${maxRetries + 1}): ${issues}`);
+
         const elements = elementsMap.get(slide.slide_number) || [];
         if (elements.length < 3) {
-          console.log(`[VERIFY] Cannot retry slide ${slide.slide_number}: insufficient DOM elements for re-annotation`);
+          console.log(`[VERIFY] Cannot retry slide ${slide.slide_number}: insufficient DOM elements`);
           break;
         }
 
-        // Re-annotate with verification feedback
         const originalBuffer = fs.readFileSync(slide._originalScreenshotPath);
         const otherInstructions = slideDefinitions.slides
           .filter(s => s.type === 'step' && s.slide_number !== slide.slide_number && s.instructions)
@@ -319,6 +341,7 @@ async function generateCarousel(url, options = {}) {
           step_topic: slide.title,
           avoid_instructions: otherInstructions,
           rejection_feedback: feedback,
+          page_description: slide._pageDescription || '',
         };
 
         try {
@@ -331,8 +354,10 @@ async function generateCarousel(url, options = {}) {
           if (result.annotations && result.annotations.length > 0) {
             slide.annotations = result.annotations;
           }
+          if (result.adapted_title) {
+            slide.title = result.adapted_title;
+          }
 
-          // Re-composite on the clean (unannotated) screenshot
           const retryAnnotations = (slide.annotations || []).filter(a => !a._notFound);
           const retryPath = slide._originalScreenshotPath.replace('.png', `_annotated_v${attempt + 2}.png`);
           await compositeAnnotations(slide._originalScreenshotPath, retryAnnotations, retryPath, accentColor);
@@ -360,9 +385,10 @@ async function generateCarousel(url, options = {}) {
       const fallbackContext = {
         title: slide.title,
         slide_number: slide.slide_number,
-        original_instructions: slide.instructions,
+        original_instructions: slide.instructions || [],
         step_topic: slide.title,
         avoid_instructions: otherInstructions,
+        page_description: slide._pageDescription || '',
       };
       try {
         await visionFallback(slide, fallbackContext, usedInstructions, language);
@@ -383,9 +409,22 @@ async function generateCarousel(url, options = {}) {
   }
 
   // Step 4d: Remove slides with rejected screenshots (no placeholder slides)
+  // Also remove resource slides that have no real YouTube thumbnail (fake embed)
   slideDefinitions.slides = slideDefinitions.slides.filter(slide => {
     if (slide.type === 'step' && slide._validation && !slide._validation.valid) {
       console.log(`Removing slide ${slide.slide_number} ("${slide.title}") — screenshot was rejected`);
+      return false;
+    }
+    if (slide.type === 'resource') {
+      // Check if this resource slide has a real YouTube thumbnail
+      const thumbSearch = (slide.image_searches || []).find(s => s.type === 'youtube_thumb');
+      if (thumbSearch) {
+        const thumbResult = imageResults.find(r => r.success && r.slide_number === slide.slide_number && r.type === 'youtube_thumb');
+        if (thumbResult && thumbResult.localPath && fs.existsSync(thumbResult.localPath)) {
+          return true; // Has real YouTube thumbnail — keep it
+        }
+      }
+      console.log(`Removing resource slide ${slide.slide_number} ("${slide.title}") — no real YouTube content`);
       return false;
     }
     return true;
@@ -430,6 +469,7 @@ async function generateCarousel(url, options = {}) {
     data.accent_color = accentColor;
     data.bg_color = bgColor;
     data.text_color = textColor;
+    data.legend_size = legendSize;
     const png = await renderTemplate(templateName, data, format);
 
     const filename = `slide_${String(i + 1).padStart(2, '0')}.png`;
@@ -441,6 +481,9 @@ async function generateCarousel(url, options = {}) {
   // Cleanup work directory
   fs.rmSync(workDir, { recursive: true, force: true });
 
+  const usage = getTokenUsage();
+  console.log(`[USAGE] ${usage.api_calls} API calls, ${usage.total_tokens} tokens (${usage.input_tokens} in + ${usage.output_tokens} out), ~$${usage.estimated_cost}`);
+
   return {
     job_id: jobId,
     format,
@@ -451,6 +494,7 @@ async function generateCarousel(url, options = {}) {
       url: `/outputs/${jobId}/${s.filename}`,
     })),
     zip_url: `/download/${jobId}`,
+    usage,
   };
 }
 
@@ -469,8 +513,12 @@ async function visionFallback(slide, slideContext, usedInstructions, language) {
     if (visionResult.annotations && visionResult.annotations.length > 0) {
       slide.annotations = visionResult.annotations;
     }
+    if (visionResult.adapted_title) {
+      console.log(`[TITLE ADAPT] Slide ${slide.slide_number}: "${slide.title}" → "${visionResult.adapted_title}"`);
+      slide.title = visionResult.adapted_title;
+    }
 
-    console.log(`[VISION] Slide ${slide.slide_number}: ${visionResult.annotations.length} annotations, ${visionResult.instructions.length} instructions`);
+    console.log(`[VISION] Slide ${slide.slide_number}: ${(visionResult.annotations || []).length} annotations, ${(visionResult.instructions || []).length} instructions`);
     if (visionResult.page_description) {
       console.log(`  Page: ${visionResult.page_description}`);
     }

@@ -22,6 +22,11 @@
   --separator: #D97757;
   --slide-w: 1080px;
   --slide-h: 1350px;
+  /* Legend sizes — overridden by pipeline via --legend-size */
+  --legend-num-size: 48px;
+  --legend-num-font: 24px;
+  --legend-text-font: 34px;
+  --legend-gap: 18px;
 }
 
 /* === Preview wrapper (stripped by Puppeteer) === */
@@ -156,7 +161,7 @@ body {
   margin-top: 24px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--legend-gap);
 }
 
 .legend-item {
@@ -166,22 +171,22 @@ body {
 }
 
 .legend-number {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: var(--legend-num-size);
+  height: var(--legend-num-size);
+  min-width: var(--legend-num-size);
   background: var(--accent);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: var(--legend-num-font);
   font-weight: 800;
   color: #FFFFFF;
   margin-top: 1px;
 }
 
 .legend-text {
-  font-size: 21px;
+  font-size: var(--legend-text-font);
   font-weight: 500;
   line-height: 1.5;
   color: var(--text);

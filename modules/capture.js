@@ -110,7 +110,7 @@ async function captureWithScreenshotOne(url, outputPath, options = {}) {
     access_key: process.env.SCREENSHOTONE_API_KEY,
     url: url,
     viewport_width: String(options.width || 1080),
-    viewport_height: String(options.height || 1080),
+    viewport_height: String(options.height || 900),
     format: 'png',
     full_page: 'false',
     block_cookie_banners: 'true',
@@ -141,7 +141,7 @@ async function captureWithScreenshotOne(url, outputPath, options = {}) {
  * Capture via Steel.dev cloud browser (handles Cloudflare, CAPTCHAs).
  */
 async function captureWithSteel(url, outputPath, options = {}) {
-  const { width = 1080, height = 1080, fullPage = false } = options;
+  const { width = 1080, height = 900, fullPage = false } = options;
   const wsUrl = `wss://connect.steel.dev?apiKey=${process.env.STEEL_API_KEY}`;
   let steelBrowser = null;
 
@@ -183,7 +183,7 @@ async function captureWithSteel(url, outputPath, options = {}) {
 async function captureWithPuppeteer(url, outputPath, options = {}) {
   const {
     width = 1080,
-    height = 1080,
+    height = 900,
     delay = 3000,
     fullPage = false,
   } = options;
@@ -501,7 +501,7 @@ async function enumerateInteractiveElements(page) {
  * Used by Steel and Puppeteer captures.
  */
 async function captureWithElementsSteel(url, outputPath, options = {}) {
-  const { width = 1080, height = 1080, fullPage = false } = options;
+  const { width = 1080, height = 900, fullPage = false } = options;
   const wsUrl = `wss://connect.steel.dev?apiKey=${process.env.STEEL_API_KEY}`;
   let steelBrowser = null;
 
@@ -542,7 +542,7 @@ async function captureWithElementsSteel(url, outputPath, options = {}) {
 }
 
 async function captureWithElementsPuppeteer(url, outputPath, options = {}) {
-  const { width = 1080, height = 1080, delay = 3000, fullPage = false } = options;
+  const { width = 1080, height = 900, delay = 3000, fullPage = false } = options;
 
   const b = await getBrowser();
   const page = await b.newPage();

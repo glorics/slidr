@@ -107,6 +107,9 @@ async function compositeAnnotations(screenshotPath, annotations, outputPath, acc
   }
 
   // 2. Numbered circles (z-index 10 — on top of everything)
+  // Safety margin: clamp to 5%-95% of image to avoid annotations being cropped
+  const MARGIN_PX_X = Math.round(imgW * 0.05);
+  const MARGIN_PX_Y = Math.round(imgH * 0.05);
   for (const circle of valid.filter(a => a.type === 'circle_number')) {
     const cx = Math.round((circle.x_percent / 100) * imgW);
     const cy = Math.round((circle.y_percent / 100) * imgH);
@@ -114,8 +117,8 @@ async function compositeAnnotations(screenshotPath, annotations, outputPath, acc
 
     composites.push({
       input: svg,
-      left: Math.max(0, Math.min(imgW - CIRCLE_CANVAS, cx - CIRCLE_CENTER)),
-      top: Math.max(0, Math.min(imgH - CIRCLE_CANVAS, cy - CIRCLE_CENTER)),
+      left: Math.max(MARGIN_PX_X, Math.min(imgW - CIRCLE_CANVAS - MARGIN_PX_X, cx - CIRCLE_CENTER)),
+      top: Math.max(MARGIN_PX_Y, Math.min(imgH - CIRCLE_CANVAS - MARGIN_PX_Y, cy - CIRCLE_CENTER)),
     });
   }
 
