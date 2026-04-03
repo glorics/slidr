@@ -904,7 +904,7 @@ body {
       </div>
       <div class="pipeline-step waiting" data-pipeline="analyzing">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">AI Agents 1-3</span>
+        <span class="step-name">Strategist → Writer → Explorer</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="searching">
@@ -919,12 +919,12 @@ body {
       </div>
       <div class="pipeline-step waiting" data-pipeline="validating">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Agent 4 — Validator</span>
+        <span class="step-name">Validator</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="refining">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Agent 5-6 — Annotator</span>
+        <span class="step-name">Annotator → Quality Check</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="rendering">
@@ -1363,15 +1363,29 @@ async function generate() {
 }
 
 // Pipeline step names for hero display
-const heroNames = {
-  scraping: 'Scraper',
-  analyzing: 'AI Agents 1-3',
-  searching: 'Image Search',
-  capturing: 'Capture Engine',
-  validating: 'Agent 4 — Validator',
-  refining: 'Agent 5-6 — Annotator',
-  rendering: 'Renderer',
-};
+// Map step + message to the specific agent name
+function getAgentName(step, message) {
+  const msg = (message || '').toLowerCase();
+  if (step === 'scraping') return 'Scraper';
+  if (step === 'analyzing') {
+    if (msg.includes('planning')) return 'Agent 1 — Strategist';
+    if (msg.includes('writing')) return 'Agent 2 — Writer';
+    if (msg.includes('validating') && msg.includes('url')) return 'Agent 3 — URL Explorer';
+    if (msg.includes('structured')) return 'Agent 3 — URL Explorer';
+    return 'AI Agents';
+  }
+  if (step === 'searching') return 'Image Search';
+  if (step === 'capturing') return 'Capture Engine';
+  if (step === 'validating') return 'Agent 4 — Validator';
+  if (step === 'refining') {
+    if (msg.includes('quality') || msg.includes('verification')) return 'Agent 6 — Quality Verifier';
+    if (msg.includes('re-annotating')) return 'Agent 5 — Annotator (retry)';
+    if (msg.includes('compositing')) return 'Compositing Engine';
+    return 'Agent 5 — Annotator';
+  }
+  if (step === 'rendering') return 'Renderer';
+  return step;
+}
 
 function resetPipeline() {
   document.querySelectorAll('.pipeline-step').forEach(el => {
@@ -1404,8 +1418,8 @@ function updatePipeline(step, message, prevStep, stepStartTimes) {
     if (!stepStartTimes[step]) stepStartTimes[step] = Date.now();
   }
 
-  // Update hero
-  document.getElementById('heroAgent').textContent = heroNames[step] || step;
+  // Update hero with specific agent name
+  document.getElementById('heroAgent').textContent = getAgentName(step, message);
   document.getElementById('heroMsg').textContent = message;
 }
 
