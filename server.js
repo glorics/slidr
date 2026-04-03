@@ -28,7 +28,7 @@ const AUTH_PASS = process.env.AUTH_PASS || '';
 const AUTH_ENABLED = AUTH_USER && AUTH_PASS;
 // Secret for signing tokens — derived from password so no extra env var needed
 const AUTH_SECRET = AUTH_ENABLED
-  ? crypto.createHash('sha256').update(`autocarousel:${AUTH_PASS}`).digest('hex')
+  ? crypto.createHash('sha256').update(`slidr:${AUTH_PASS}`).digest('hex')
   : '';
 
 function makeToken(user) {
@@ -241,7 +241,7 @@ app.get('/render/:template', async (req, res) => {
   }
 });
 
-// === MAIN ENDPOINT: Generate carousel ===
+// === MAIN ENDPOINT: Generate slides ===
 app.post('/generate', async (req, res) => {
   const { url, format = '4:5', max_slides = 7, language = 'en', accent_color, bg_color, text_color, legend_size } = req.body;
 

@@ -1,8 +1,8 @@
 #!/bin/bash
-# cleanup.sh — Remove generated carousel outputs older than 24 hours
-# Run via cron: 0 */6 * * * /bin/bash /opt/autocarousel/scripts/cleanup.sh
+# cleanup.sh — Remove generated slide outputs older than 24 hours
+# Run via cron: 0 */6 * * * /bin/bash /opt/slidr/scripts/cleanup.sh
 
-OUTPUT_DIR="${OUTPUT_DIR:-/var/www/autocarousel/outputs}"
+OUTPUT_DIR="${OUTPUT_DIR:-/var/www/slidr/outputs}"
 
 if [ ! -d "$OUTPUT_DIR" ]; then
   exit 0

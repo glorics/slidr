@@ -1,8 +1,8 @@
 # Slidr
 
-**URL to annotated tutorial carousel slides in seconds.**
+**Paste a URL. Get annotated tutorial slides in seconds.**
 
-Slidr takes any URL and generates a series of annotated tutorial slides ready for LinkedIn, Instagram, and TikTok. Powered by a 6-agent AI pipeline using Claude Sonnet, it automatically captures screenshots, identifies key UI elements, places pixel-perfect annotations, and composes professional carousel slides.
+Slidr takes any URL and generates a series of annotated tutorial slides ready for LinkedIn, Instagram, and TikTok. Powered by a 6-agent AI pipeline using Claude Sonnet, it automatically captures screenshots, identifies key UI elements, places pixel-perfect annotations, and composes professional slides.
 
 **Cost per carousel:** ~$0.08 - $0.18
 

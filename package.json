@@ -1,7 +1,7 @@
 {
   "name": "slidr",
   "version": "1.0.0",
-  "description": "Slidr - URL to annotated tutorial carousel slides",
+  "description": "Slidr - Paste a URL, get annotated tutorial slides",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

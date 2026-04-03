@@ -12,7 +12,7 @@ SERVICE_NAME="slidr"
 echo ""
 echo "  ╔══════════════════════════════════╗"
 echo "  ║       Slidr Installer            ║"
-echo "  ║  URL → Tutorial Carousel Slides  ║"
+echo "  ║  URL → Annotated Tutorial Slides  ║"
 echo "  ╚══════════════════════════════════╝"
 echo ""
 echo "  Domain: $DOMAIN"
@@ -138,7 +138,7 @@ apache2ctl configtest > /dev/null 2>&1 && systemctl restart apache2
 echo "[7/8] Creating systemd service..."
 cat > /etc/systemd/system/${SERVICE_NAME}.service << SVCEOF
 [Unit]
-Description=Slidr - URL to Tutorial Carousel Slides
+Description=Slidr - URL to Annotated Tutorial Slides
 After=network.target
 
 [Service]

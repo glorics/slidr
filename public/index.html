@@ -1342,7 +1342,7 @@ async function generate() {
             timerEl.textContent = usageText;
             document.getElementById('heroAgent').textContent = 'Complete!';
             document.querySelector('.progress-hero .spinner').style.display = 'none';
-            document.getElementById('heroMsg').textContent = data.carousel_title || '';
+            document.getElementById('heroMsg').textContent = data.carousel_title || 'Slides ready';
             showResults(data);
           } else if (eventType === 'error') {
             clearInterval(timerInterval);
@@ -1425,7 +1425,7 @@ function showResults(data) {
   const grid = document.getElementById('slidesGrid');
   const downloadBtn = document.getElementById('btnDownload');
 
-  title.textContent = data.carousel_title || 'Carousel';
+  title.textContent = data.carousel_title || 'Slides';
   downloadBtn.href = data.zip_url || '#';
   grid.innerHTML = '';
 
