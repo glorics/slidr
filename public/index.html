@@ -720,6 +720,21 @@ body {
   font-weight: 600;
   color: var(--text);
   min-width: 100px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
 }
 .pipeline-step.waiting .step-name { color: var(--text-muted); }
 
@@ -904,7 +919,7 @@ body {
       </div>
       <div class="pipeline-step waiting" data-pipeline="analyzing">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Strategist → Writer → Explorer</span>
+        <span class="step-name"><span class="ai-badge">AI</span> Strategist → Writer → Explorer</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="searching">
@@ -919,12 +934,12 @@ body {
       </div>
       <div class="pipeline-step waiting" data-pipeline="validating">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Validator</span>
+        <span class="step-name"><span class="ai-badge">AI</span> Validator</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="refining">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Annotator → Quality Check</span>
+        <span class="step-name"><span class="ai-badge">AI</span> Annotator → Quality Verifier</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="rendering">
@@ -1363,25 +1378,26 @@ async function generate() {
 }
 
 // Pipeline step names for hero display
-// Map step + message to the specific agent name
+// Map step + message to display name. AI agents get the ⚡ prefix.
+const AI = '\u2728 '; // sparkle icon for AI agents
 function getAgentName(step, message) {
   const msg = (message || '').toLowerCase();
   if (step === 'scraping') return 'Scraper';
   if (step === 'analyzing') {
-    if (msg.includes('planning')) return 'Agent 1 — Strategist';
-    if (msg.includes('writing')) return 'Agent 2 — Writer';
-    if (msg.includes('validating') && msg.includes('url')) return 'Agent 3 — URL Explorer';
-    if (msg.includes('structured')) return 'Agent 3 — URL Explorer';
-    return 'AI Agents';
+    if (msg.includes('planning')) return AI + 'Strategist';
+    if (msg.includes('writing')) return AI + 'Writer';
+    if (msg.includes('validating') && msg.includes('url')) return AI + 'URL Explorer';
+    if (msg.includes('structured')) return AI + 'URL Explorer';
+    return AI + 'AI Agents';
   }
   if (step === 'searching') return 'Image Search';
   if (step === 'capturing') return 'Capture Engine';
-  if (step === 'validating') return 'Agent 4 — Validator';
+  if (step === 'validating') return AI + 'Validator';
   if (step === 'refining') {
-    if (msg.includes('quality') || msg.includes('verification')) return 'Agent 6 — Quality Verifier';
-    if (msg.includes('re-annotating')) return 'Agent 5 — Annotator (retry)';
-    if (msg.includes('compositing')) return 'Compositing Engine';
-    return 'Agent 5 — Annotator';
+    if (msg.includes('quality') || msg.includes('verification')) return AI + 'Quality Verifier';
+    if (msg.includes('re-annotating')) return AI + 'Annotator (retry)';
+    if (msg.includes('compositing')) return 'Compositing';
+    return AI + 'Annotator';
   }
   if (step === 'rendering') return 'Renderer';
   return step;
