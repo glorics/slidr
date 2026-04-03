@@ -602,6 +602,21 @@ body {
   text-align: center;
   padding: 28px 0 20px;
 }
+.progress-robot {
+  height: 48px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.progress-robot img {
+  height: 48px;
+  width: auto;
+  color: var(--accent);
+  transition: opacity 0.3s ease;
+}
+.progress-robot:empty { display: none; }
+
 .progress-hero-agent {
   font-size: 18px;
   font-weight: 700;
@@ -904,6 +919,7 @@ body {
   <!-- Progress -->
   <div class="progress-section" id="progressSection">
     <div class="progress-hero">
+      <div class="progress-robot" id="heroRobot"></div>
       <div class="progress-hero-agent"><span class="spinner"></span> <span id="heroAgent">Starting...</span></div>
       <div class="progress-hero-msg" id="heroMsg"></div>
       <div class="progress-timer" id="progressTimer">0:00</div>
@@ -1403,6 +1419,30 @@ function getAgentName(step, message) {
   return step;
 }
 
+// Robot icon for each AI agent
+function updateRobot(step, message) {
+  const el = document.getElementById('heroRobot');
+  const msg = (message || '').toLowerCase();
+  let robot = null;
+  if (step === 'analyzing') {
+    if (msg.includes('planning')) robot = 'strategist';
+    else if (msg.includes('writing')) robot = 'writer';
+    else if (msg.includes('validating') || msg.includes('structured')) robot = 'explorer';
+    else robot = 'strategist';
+  } else if (step === 'validating') {
+    robot = 'validator';
+  } else if (step === 'refining') {
+    if (msg.includes('quality') || msg.includes('verification')) robot = 'quality';
+    else if (msg.includes('compositing')) robot = null;
+    else robot = 'annotator';
+  }
+  if (robot) {
+    el.innerHTML = `<img src="/robots/${robot}.svg" alt="${robot}">`;
+  } else {
+    el.innerHTML = '';
+  }
+}
+
 function resetPipeline() {
   document.querySelectorAll('.pipeline-step').forEach(el => {
     el.className = 'pipeline-step waiting';
@@ -1411,6 +1451,7 @@ function resetPipeline() {
   document.getElementById('heroAgent').textContent = 'Starting...';
   document.getElementById('heroMsg').textContent = '';
   document.getElementById('progressTimer').textContent = '0:00';
+  document.getElementById('heroRobot').innerHTML = '';
   const spinner = document.querySelector('.progress-hero .spinner');
   if (spinner) spinner.style.display = '';
 }
@@ -1434,9 +1475,10 @@ function updatePipeline(step, message, prevStep, stepStartTimes) {
     if (!stepStartTimes[step]) stepStartTimes[step] = Date.now();
   }
 
-  // Update hero with specific agent name
+  // Update hero with specific agent name + robot icon
   document.getElementById('heroAgent').textContent = getAgentName(step, message);
   document.getElementById('heroMsg').textContent = message;
+  updateRobot(step, message);
 }
 
 function finishPipeline(lastStep, stepStartTimes) {
