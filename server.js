@@ -15,6 +15,7 @@ const PORT = process.env.PORT || 3000;
 // === SETUP WIZARD (first-launch) ===
 const setupWizard = require('./modules/setup-wizard');
 if (setupWizard.needsSetup()) {
+  app.use('/favicon.svg', express.static(path.join(__dirname, 'public', 'favicon.svg')));
   app.use(setupWizard.router);
   app.use((req, res) => res.redirect('/setup'));
   app.listen(PORT, () => console.log(`Slidr setup wizard: http://localhost:${PORT}/setup`));
@@ -64,6 +65,7 @@ function loginPageHtml(error = '') {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Login - Slidr</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
