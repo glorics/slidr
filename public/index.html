@@ -930,7 +930,7 @@ body {
     <div class="pipeline-steps" id="pipelineSteps">
       <div class="pipeline-step waiting" data-pipeline="scraping">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Scraper</span>
+        <span class="step-name">Scrapping</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="analyzing">
@@ -940,12 +940,12 @@ body {
       </div>
       <div class="pipeline-step waiting" data-pipeline="searching">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Image Search</span>
+        <span class="step-name">Searching images</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="capturing">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Capture</span>
+        <span class="step-name">Capturing</span>
         <span class="step-status" data-status>waiting</span>
       </div>
       <div class="pipeline-step waiting" data-pipeline="validating">
@@ -960,7 +960,7 @@ body {
       </div>
       <div class="pipeline-step waiting" data-pipeline="rendering">
         <div class="step-icon"><div class="dot"></div><div class="mini-spinner"></div><div class="check">&#10003;</div></div>
-        <span class="step-name">Renderer</span>
+        <span class="step-name">Rendering</span>
         <span class="step-status" data-status>waiting</span>
       </div>
     </div>
@@ -1398,7 +1398,7 @@ async function generate() {
 const AI = '\u2728 '; // sparkle icon for AI agents
 function getAgentName(step, message) {
   const msg = (message || '').toLowerCase();
-  if (step === 'scraping') return 'Scraper';
+  if (step === 'scraping') return 'Scrapping...';
   if (step === 'analyzing') {
     if (msg.includes('planning')) return AI + 'Strategist';
     if (msg.includes('writing')) return AI + 'Writer';
@@ -1406,16 +1406,16 @@ function getAgentName(step, message) {
     if (msg.includes('structured')) return AI + 'URL Explorer';
     return AI + 'AI Agents';
   }
-  if (step === 'searching') return 'Image Search';
-  if (step === 'capturing') return 'Capture Engine';
+  if (step === 'searching') return 'Searching images...';
+  if (step === 'capturing') return 'Capturing...';
   if (step === 'validating') return AI + 'Validator';
   if (step === 'refining') {
     if (msg.includes('quality') || msg.includes('verification')) return AI + 'Quality Verifier';
     if (msg.includes('re-annotating')) return AI + 'Annotator (retry)';
-    if (msg.includes('compositing')) return 'Compositing';
+    if (msg.includes('compositing')) return 'Compositing...';
     return AI + 'Annotator';
   }
-  if (step === 'rendering') return 'Renderer';
+  if (step === 'rendering') return 'Rendering...';
   return step;
 }
 
