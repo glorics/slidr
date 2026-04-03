@@ -163,7 +163,12 @@ systemctl enable ${SERVICE_NAME} > /dev/null 2>&1
 systemctl start ${SERVICE_NAME}
 
 # Cleanup cron (every 6 hours)
-echo "0 */6 * * * /bin/bash ${APP_DIR}/scripts/cleanup.sh 2>/dev/null" | crontab -u root -
+if command -v crontab &> /dev/null; then
+  echo "0 */6 * * * /bin/bash ${APP_DIR}/scripts/cleanup.sh 2>/dev/null" | crontab -u root -
+else
+  apt install -y -qq cron > /dev/null 2>&1 || true
+  echo "0 */6 * * * /bin/bash ${APP_DIR}/scripts/cleanup.sh 2>/dev/null" | crontab -u root - 2>/dev/null || true
+fi
 
 # === SSL (optional) ===
 echo ""
