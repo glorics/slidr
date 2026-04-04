@@ -208,6 +208,14 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Video presentation page (public)
+app.get('/video', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'video.html'));
+});
+app.get('/slidr.mp4', (req, res) => {
+  res.sendFile(path.join(__dirname, 'slidr.mp4'));
+});
+
 // Auth middleware — protect everything below this point
 if (AUTH_ENABLED) {
   app.use((req, res, next) => {

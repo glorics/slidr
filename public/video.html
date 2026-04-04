@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slidr — Demo</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:title" content="Slidr — URL to Annotated Tutorial Slides">
+<meta property="og:description" content="Paste a URL, get publication-ready annotated slides in under 3 minutes. Powered by a 6-agent AI pipeline.">
+<meta property="og:type" content="video.other">
+<meta property="og:video" content="/slidr.mp4">
+<meta property="og:video:type" content="video/mp4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #FAFAFA;
+  color: #09090B;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+.header {
+  width: 100%;
+  max-width: 960px;
+  padding: 32px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #D97757;
+  text-decoration: none;
+}
+.logo span { color: #A1A1AA; font-weight: 400; }
+
+.badge {
+  background: rgba(217, 119, 87, 0.12);
+  color: #D97757;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(217, 119, 87, 0.25);
+}
+
+/* Main content */
+.main {
+  width: 100%;
+  max-width: 960px;
+  padding: 40px 24px;
+  flex: 1;
+}
+
+.title {
+  font-size: 42px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: 12px;
+}
+.title em {
+  font-style: normal;
+  color: #D97757;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: #52525B;
+  font-weight: 400;
+  line-height: 1.5;
+  margin-bottom: 36px;
+  max-width: 620px;
+}
+
+/* Video player */
+.player-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 0 0 1px #E4E4E7, 0 24px 80px rgba(0,0,0,0.1);
+}
+
+video {
+  width: 100%;
+  display: block;
+  border-radius: 16px;
+  cursor: pointer;
+}
+
+/* Play overlay */
+.play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 16px;
+}
+.play-overlay:hover { background: rgba(0,0,0,0.2); }
+.play-overlay.hidden { display: none; }
+
+.play-btn {
+  width: 80px;
+  height: 80px;
+  background: #D97757;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 24px rgba(217, 119, 87, 0.4);
+  transition: transform 0.15s;
+}
+.play-overlay:hover .play-btn { transform: scale(1.08); }
+
+.play-btn svg {
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  fill: white;
+}
+
+/* Custom controls bar */
+.controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 16px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transition: opacity 0.25s;
+  border-radius: 0 0 16px 16px;
+}
+.player-wrapper:hover .controls,
+.player-wrapper.playing .controls { opacity: 1; }
+
+.controls button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.controls button svg {
+  width: 22px;
+  height: 22px;
+  fill: #FAFAFA;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+.progress-bar:hover { height: 6px; }
+
+.progress-fill {
+  height: 100%;
+  background: #D97757;
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+.time {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  font-variant-numeric: tabular-nums;
+  min-width: 45px;
+}
+
+/* Info section */
+.info {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.info-card {
+  background: #FFFFFF;
+  border: 1px solid #E4E4E7;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.info-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #D97757;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-card p {
+  font-size: 15px;
+  color: #52525B;
+  line-height: 1.5;
+}
+
+/* Footer */
+.footer {
+  width: 100%;
+  max-width: 960px;
+  padding: 24px;
+  text-align: center;
+  color: #A1A1AA;
+  font-size: 13px;
+  border-top: 1px solid #E4E4E7;
+}
+.footer a {
+  color: #D97757;
+  text-decoration: none;
+}
+.footer a:hover { text-decoration: underline; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .title { font-size: 28px; }
+  .subtitle { font-size: 15px; }
+  .info { grid-template-columns: 1fr; }
+  .play-btn { width: 60px; height: 60px; }
+  .play-btn svg { width: 24px; height: 24px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a href="/" class="logo">Slidr<span>rrrr</span></a>
+  <span class="badge">Scrapes.ai × Hostinger Hackathon</span>
+</div>
+
+<div class="main">
+  <h1 class="title">URL → Annotated Slides <em>in seconds.</em></h1>
+  <p class="subtitle">Paste any URL. Get publication-ready tutorial slides for LinkedIn, Instagram, and TikTok — powered by 6 specialized AI agents working in sequence.</p>
+
+  <div class="player-wrapper" id="playerWrapper">
+    <video id="video" preload="auto" playsinline>
+      <source src="/slidr.mp4" type="video/mp4">
+    </video>
+
+    <div class="play-overlay" id="playOverlay">
+      <div class="play-btn">
+        <svg viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21"/></svg>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="playPauseBtn" title="Play/Pause">
+        <svg id="iconPlay" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21"/></svg>
+        <svg id="iconPause" viewBox="0 0 24 24" style="display:none"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>
+      </button>
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <span class="time" id="timeDisplay">0:00</span>
+      <button id="muteBtn" title="Mute">
+        <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.47 4.47 0 002.5-3.5zM14 3.23v2.06a6.51 6.51 0 010 13.42v2.06A8.51 8.51 0 0014 3.23z"/></svg>
+      </button>
+      <button id="fsBtn" title="Fullscreen">
+        <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="info">
+    <div class="info-card">
+      <h3>6 AI Agents</h3>
+      <p>Strategist, Writer, Explorer, Validator, Annotator, Quality Verifier — each with a single focused task.</p>
+    </div>
+    <div class="info-card">
+      <h3>Screenshot-first</h3>
+      <p>Annotations are written AFTER seeing the page — pixel-perfect circle placement on real UI elements.</p>
+    </div>
+    <div class="info-card">
+      <h3>~$0.10 / carousel</h3>
+      <p>Full carousel in under 3 minutes. 4 languages, 3 formats, customizable themes and colors.</p>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Built by <a href="https://glorics.com">Glorics</a> · Hosted on Hostinger VPS · Powered by Claude Sonnet
+</div>
+
+<script>
+const video = document.getElementById('video');
+const overlay = document.getElementById('playOverlay');
+const wrapper = document.getElementById('playerWrapper');
+const playPauseBtn = document.getElementById('playPauseBtn');
+const iconPlay = document.getElementById('iconPlay');
+const iconPause = document.getElementById('iconPause');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const timeDisplay = document.getElementById('timeDisplay');
+const muteBtn = document.getElementById('muteBtn');
+const fsBtn = document.getElementById('fsBtn');
+
+function fmt(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+function togglePlay() {
+  if (video.paused) {
+    video.play().then(() => {
+      overlay.classList.add('hidden');
+      wrapper.classList.add('playing');
+      iconPlay.style.display = 'none';
+      iconPause.style.display = 'block';
+    }).catch(err => {
+      console.error('Play failed:', err);
+    });
+  } else {
+    video.pause();
+    wrapper.classList.remove('playing');
+    iconPlay.style.display = 'block';
+    iconPause.style.display = 'none';
+  }
+}
+
+overlay.addEventListener('click', togglePlay);
+video.addEventListener('click', togglePlay);
+playPauseBtn.addEventListener('click', togglePlay);
+
+video.addEventListener('ended', () => {
+  overlay.classList.remove('hidden');
+  wrapper.classList.remove('playing');
+  iconPlay.style.display = 'block';
+  iconPause.style.display = 'none';
+});
+
+video.addEventListener('timeupdate', () => {
+  const pct = (video.currentTime / video.duration) * 100;
+  progressFill.style.width = pct + '%';
+  timeDisplay.textContent = fmt(video.currentTime);
+});
+
+progressBar.addEventListener('click', (e) => {
+  const rect = progressBar.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  video.currentTime = pct * video.duration;
+});
+
+muteBtn.addEventListener('click', () => {
+  video.muted = !video.muted;
+  muteBtn.style.opacity = video.muted ? '0.4' : '1';
+});
+
+fsBtn.addEventListener('click', () => {
+  if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+  else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+});
+</script>
+</body>
+</html>

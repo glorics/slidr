@@ -6,3 +6,7 @@ test_results/
 test_slide_*.png
 *.log
 .env.production.backup
+slidr.mp4
+slidr_h264.mp4
+job_*.zip
+agentics_robot_icons.svg
