@@ -50,7 +50,7 @@ function createCircleSvg(label, accent = DEFAULT_ACCENT) {
           fill="none" stroke="${accentRgba}" stroke-width="2"/>
   <circle cx="${CIRCLE_CENTER}" cy="${CIRCLE_CENTER}" r="${CIRCLE_R}"
           fill="${accent}" stroke="rgba(255,255,255,0.35)" stroke-width="2.5" filter="url(#ds)"/>
-  <text x="${CIRCLE_CENTER}" y="${CIRCLE_CENTER}" text-anchor="middle" dominant-baseline="central"
+  <text x="${CIRCLE_CENTER}" y="${CIRCLE_CENTER}" text-anchor="middle" dy="0.35em"
         font-family="Liberation Sans, Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="white">${label}</text>
 </svg>`);
 }
