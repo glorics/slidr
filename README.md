@@ -87,6 +87,8 @@ sudo systemctl restart apache2
 
 This does not affect normal interactive SSH installations — the SSL step with Let's Encrypt enables this module automatically.
 
+**"Service Unavailable" after Setup Wizard:** After completing the Setup Wizard, you may briefly see a 503 error. This is normal — the server is restarting with your new configuration. Simply wait a few seconds and refresh the page.
+
 ## Tech Stack
 
 Node.js, Express, Puppeteer, Sharp, Claude Sonnet (Anthropic API), Steel.dev, ScreenshotOne
