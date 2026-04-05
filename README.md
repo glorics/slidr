@@ -78,14 +78,14 @@ slidr/
 
 ## Troubleshooting
 
-If you skip SSL setup during installation and Apache shows a default page instead of Slidr, enable the `expires` module manually:
+**Automated/non-interactive installation only:** If you run `install.sh` via a script or CI pipeline (e.g. `echo 'n' | bash install.sh domain.com`) and skip the SSL prompt, Apache may show its default page instead of Slidr. This is because the `expires` module is not enabled. Fix:
 
 ```bash
 sudo a2enmod expires
 sudo systemctl restart apache2
 ```
 
-This module is automatically enabled when you set up SSL with Let's Encrypt (recommended).
+This does not affect normal interactive SSH installations — the SSL step with Let's Encrypt enables this module automatically.
 
 ## Tech Stack
 
