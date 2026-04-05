@@ -76,6 +76,17 @@ slidr/
     └── cleanup.sh         # Output cleanup cron
 ```
 
+## Troubleshooting
+
+If you skip SSL setup during installation and Apache shows a default page instead of Slidr, enable the `expires` module manually:
+
+```bash
+sudo a2enmod expires
+sudo systemctl restart apache2
+```
+
+This module is automatically enabled when you set up SSL with Let's Encrypt (recommended).
+
 ## Tech Stack
 
 Node.js, Express, Puppeteer, Sharp, Claude Sonnet (Anthropic API), Steel.dev, ScreenshotOne
